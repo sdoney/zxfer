@@ -33,7 +33,7 @@
 .\"     zxfer [-h]
 .\"         Where destination is a ZFS filesystem e.g.  poolname/fsname
 
-.Dd December 10, 2010
+.Dd December 11, 2010
 .Dt ZXFER 8
 .Os
 .Sh NAME
@@ -706,7 +706,8 @@ Note that this will only work on filesystems that are writable.
 .Ss Ex8 - Backup FreeBSD 8.0 root mirror
 In this case we might want to backup a directory within a pool, using rsync
 to do the heavy lifting, while also making a backup of the properties
-of the filesystems transferred. 
+of the filesystems transferred. Note that this was only tested with a
+non-updated world and kernel.
 .Pp
 .Nm
 .Cm -SPklv -R /boot/modules,/root,/etc,/var,/usr 

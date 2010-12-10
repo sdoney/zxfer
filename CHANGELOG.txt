@@ -1,6 +1,8 @@
 CHANGELOG
 =========
-20101210 ver 0.9.0 -Added some output for errors.
+20101211 ver 0.9.0 -Added some output for errors.
+           -Added proviso to man page about backing up/restoring FreeBSD
+	     root directories.
            -Familiarized self with mercurial workflow in anticipation of
 	     publishing.
            -Fixed several Solaris compatibility bugs.

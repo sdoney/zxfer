@@ -40,13 +40,6 @@
 # This utility comes with a man page. If you can't find it by typing
 # "man zxfer", you might look to download it from www.zxfer.org.
 
-# Version number date, comment
-# 0.8.0   20101014 Final draft of zxfer
-# 0.8.1  20101115 Added option u, updated man page
-# 0.8.2  20101117 Search for rsync location, for Solaris compatibility.
-# 0.8.3  20101127 Bug fixed. Added beep "-b" option.
-# 0.9.0  20101205 OpenSolaris compatibility fixes.
-
 # Acknowledgments
 # Thanks to Constantin Gonzalez (original author of zfs-replicate) for 
 # the generous permission and licensing of his script zfs-replicate which
