@@ -17,7 +17,7 @@ Refer to the man page, and the file COPYING.
 
 2. FILES
 ========
-zxfer.bz2
+zxfer-X.Y.Z.bz2
 a) README.txt   - this file
 b) COPYING      - BSD license
 c) zxfer        - zxfer
