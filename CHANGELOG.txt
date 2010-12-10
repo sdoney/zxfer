@@ -1,0 +1,50 @@
+CHANGELOG
+=========
+20101210 ver 0.9.0 -Added some output for errors.
+           -Familiarized self with mercurial workflow in anticipation of
+	     publishing.
+           -Fixed several Solaris compatibility bugs.
+           -Added /usr/bin as rsync location
+	   -Changed awk to gawk
+	   -mlslabel transferring is not supported at this stage.
+	   -ditto for keysource,keystatus,rekeydate,encryption.
+	   -OpenSolaris wasn't handling 3 pipes in a single line, reduced
+	    to maximum of 2 and it works.
+20101127 ver 0.8.3 A week trialing zxfer on the workstation in active use
+             pays off. Not all snapshots were transferring with zfs send
+	     based zxfers. Needless to say, very glad it's squashed.
+	   -Also added a beep (-b) feature, to alert when zxfer finishes.
+	   -Finished tweaking and testing the man page for easy conversion
+	     to Solaris format (using mdoc2man.awk).
+20101117 ver 0.8.2 Nearly ready, just needs Solaris man page.
+           -Location of rsync is searched for at the start.
+20101115 ver 0.8.1 Ready to release?
+           -Finished testing on all of the examples in the man page.
+           -Added the ability to specify snapshots to use as a base
+	     for rsync (option "u").
+	   -Changed the default rsync options (see man page).
+20101013 ver 0.8.0 First "near final" draft sent to Constantin.
+           In the intervening time, many changes have taken place. 
+	   zxfer is chosen as the new name. Some of the additional features:
+	   -recursive transfers
+	   -property and property source transfer of ZFS filesystems - 
+	     creation and setting
+	   -property overrides (e.g. for compression, dedup, copies etc.)
+	   -an rsync mode, for copying arbitrary files and directories 
+	     from within a pool atomically
+	   -property backup mode, to allow the future restore of properties
+	     while retaining the ability to back them up with different
+	     properties than they would otherwise have, e.g. compression etc.
+	   -removed the ksh dependency
+	   -a man page
+	   -much bug testing
+20100504 Dreckman worked on a bug fix and some additions to
+           zfs-replicate; these are submitted to CG. At this stage
+	   the additions are already fairly extensive, so Contantin kindly 
+	   suggested that the new version become a new utility in its 
+	   own right. Collaboration commenced between the two with 
+	   Constantin offering helpful guidance throughout as Dreckman coded
+	   new features and squashed bugs.
+20080813 zfs-replicate 0.7 is released by Constantin Gonzalez as the
+           last update in his zfs-replicate utility. This may be found at
+         http://blogs.sun.com/constantin/entry/zfs_replicator_script_new_edition
