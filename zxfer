@@ -83,14 +83,15 @@
 # Also note that FreeBSD does not support the following properties yet:
 # devices,aclmode,aclinherit,shareiscsi, so don't try and set them.
 
-#     zxfer [-bFdnPsv] [-k | -e] {-N path/to/src | -R path/to/src}
-#           [-m [c FMRI|pattern[ FMRI|pattern]...]]] [-r host]
-#           [-o option1=value1,option2=value2...] destination
-#     zxfer {-S} [-bdvPnl] [-k | -e] [-f /path/to/rsfile]
+#     zxfer [-FdnPsv] [-k | -e] [-b | -B] {-N path/to/src | -R path/to/src}
+#           [-m [c FMRI|pattern[ FMRI|pattern]...]]] [-O user@host]
+#           [-T user@host] [-o option1=value1,option2=value2...] destination
+#     zxfer {-S} [-dvPnl] [-k | -e] [-b | -B] [-f /path/to/rsfile]
 #           {-R /path/to/src1,path/to/src2... | -N /path/to/src1,path/to/src2...}
 #           [-o option1=value1,option2=value2...] [-L value] [-u snapshot]
 #           destination
 #     zxfer [-h]
+
 #
 #           Where destination is a ZFS filesystem e.g.  poolname/fsname
 
@@ -117,6 +118,8 @@ option_e=0
 option_u=0
 option_b=0
 option_B=0
+option_O=""
+option_T=""
 exit_status=1 # defaults to failure
 
 services=""
@@ -160,7 +163,7 @@ version,volsize,mountpoint,mlslabel,keysource,keystatus,rekeydate,encryption"
 
 
 # Properties not supported on FreeBSD 8.0
-fbsd_readonly_properties="devices,aclmode,aclinherit,shareiscsi,xattr,vscan,nbmand"
+fbsd_readonly_properties="aclmode,aclinherit,devices,nbmand,shareiscsi,vscan,xattr"
 
 
 #
@@ -1416,42 +1419,49 @@ $backup_file_extension.$suspect_fs_tail)
 #
 
 # Read command line switches
-while getopts L:SPN:o:R:f:dcFhmnsbBu:vekr:l?: i
+#while getopts L:SPN:o:R:f:dcFhmnsbBu:vekT:O:l?: i
+while getopts bBc:def:FhklL:lmnN:o:O:PPR:sST:u:v?: i
 do
   case $i in
-    L)
-      option_L="$OPTARG"
+    b)
+      option_b=1
       ;;
-    S)
-      option_S=1
-      ;;
-    o)
-      option_o="$OPTARG"
-      ;;
-    P)
-      option_P=1
-      ;;
-    R)
-      option_R="$OPTARG"
-      ;;
-    N)
-      option_N="$OPTARG"
-      ;;
-    d)
-      option_d=1
+    B)
+      option_B=1
       ;;
     c)
       services="$OPTARG"
       ;;
-    F)
-      option_F="-F"
+    d)
+      option_d=1
+      ;;
+    e)
+      option_e=1
+      # Need to transfer properties, just the backed up properties
+      # are substituted 
+      option_P=1 
       ;;
     f)
       option_f="$OPTARG"
       ;;
+    F)
+      option_F="-F"
+      ;;
     h)
       usage
       exit 2
+      ;;
+    k)
+      option_k=1
+      # In order to back up the properties of the source, the
+      # properties of the source must be transferred as well.
+      option_P=1 
+      ;;
+    l)
+      option_l=1
+      ;;
+    L)
+      option_L="$OPTARG"
       ;;
     m)
       option_m=1
@@ -1461,39 +1471,38 @@ do
     n)
       option_n=1
       ;;
+    N)
+      option_N="$OPTARG"
+      ;;
+    o)
+      option_o="$OPTARG"
+      ;;
+    O)
+      LZFS="ssh $OPTARG /sbin/zfs"
+      option_O="ssh $OPTARG "
+      ;;
+    P)
+      option_P=1
+      ;;
+    R)
+      option_R="$OPTARG"
+      ;;
     s)
       option_s=1
       ;;
-    v)
-      option_v=1
+    S)
+      option_S=1
       ;;
-    k)
-      option_k=1
-      # In order to back up the properties of the source, the
-      # properties of the source must be transferred as well.
-      option_P=1 
-      ;;
-    e)
-      option_e=1
-      # Need to transfer properties, just the backed up properties
-      # are substituted 
-      option_P=1 
-      ;;
-    r)
+    T)
       RZFS="ssh $OPTARG /sbin/zfs"
-      ;;
-    l)
-      option_l=1
+      option_T="ssh $OPTARG "
       ;;
     u)
       option_u=1
       snapshot_name="$OPTARG"
       ;;
-    b)
-      option_b=1
-      ;;
-    B)
-      option_B=1
+    v)
+      option_v=1
       ;;
     \?)
       usage

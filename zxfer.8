@@ -23,14 +23,15 @@
 .\" LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
 .\" OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 .\" SUCH DAMAGE.
-.\"     zxfer [-bFdnPsv] [-k | -e] {-N path/to/src | -R path/to/src}
-.\"           [-m [c FMRI|pattern[ FMRI|pattern]...]]] [-r user@host]
-.\"           [-o option1=value1,option2=value2...] destination
-.\"     zxfer {-S} [-bdvPnl] [-k | -e] [-f /path/to/rsfile]
+.\"     zxfer [-FdnPsv] [-k | -e] [-b | -B] {-N path/to/src | -R path/to/src}
+.\"           [-m [c FMRI|pattern[ FMRI|pattern]...]]] [-O user@host]
+.\"           [-T user@host] [-o option1=value1,option2=value2...] destination
+.\"     zxfer {-S} [-dvPnl] [-k | -e] [-b | -B] [-f /path/to/rsfile]
 .\"           {-R /path/to/src1,path/to/src2... | -N /path/to/src1,path/to/src2...}
 .\"           [-o option1=value1,option2=value2...] [-L value] [-u snapshot]
 .\"           destination
 .\"     zxfer [-h]
+.\"
 .\"         Where destination is a ZFS filesystem e.g.  poolname/fsname
 
 .Dd March 23, 2011
@@ -46,7 +47,8 @@
 .Op Fl b | B
 .Brq -N path/to/src | -R path/to/src 
 .Op Fl m Op Ar c "FMRI|pattern[ FMRI|pattern]...]" 
-.Op Fl r Ar user@host
+.Op Fl O Ar user@host
+.Op Fl T Ar user@host
 .Op Fl o Ar option1=value1,option2=value2...
 .Ar destination
 .Nm
@@ -388,16 +390,26 @@ e.g.  specifying -N
 .Pa tank/tmp
 will transfer only
 .Pa tank/tmp .
-.It Fl r
-(r)emotely transfer via
-.Xr ssh 1 . 
+.It Fl O
+Specify an (O)rigin user@host. This allows transfers FROM a remote host via ssh.
+e.g. Whatever filesystems you specify as the source are taken to exist on that 
+remote host. 
+.Pp
 For this to work, you must have a working ssh
-connection from your local machine to a remote machine, using public key based
+connection from your local machine to the remote host, using public key based
 authentication (so that you won't have to keep entering a password every time
 a command is sent over ssh). You must have
 .Nm
-on your local machine. Both local and remote machines must support
-.Xr zfs 1 .
+on your local machine. The remote host must support
+.Xr zfs 1 ,
+and so does your local machine if 
+.Op Fl T
+is not also used.  This option is currently in testing.
+.Pp
+The syntax for this command is -O user@remote_host. e.g. -O root@192.168.0.1
+.It Fl r
+(r)emotely transfer via
+.Xr ssh 1 . 
 .Pp
 The syntax for this command is: -r user@remote_host.
 .It Fl R
@@ -433,6 +445,23 @@ at the end, and ensure that a current snapshot is taken before or during the
 second execution. e.g. use this option to ensure that a relatively current
 snapshot exists, create it manually, or wait until your own snapshotting
 regime does the job for you (if you have one).
+.It Fl T
+Specify a (T)arget user@host. This allows transfers TO a remote host via ssh.
+e.g. Whatever filesystem you specify as the destination will be where the 
+source filesystems will be sent.
+.Pp
+For this to work, you must have a working ssh
+connection from your local machine to the remote host, using public key based
+authentication (so that you won't have to keep entering a password every time
+a command is sent over ssh). You must have
+.Nm
+on your local machine. The remote host must support
+.Xr zfs 1 ,
+and so does your local machine if 
+.Op Fl O
+is not also used.  This option is currently in testing.
+.Pp
+The syntax for this command is -T user@remote_host. e.g. -T root@192.168.1.2
 .El
 .Ss Rsync mode 
 (i.e. -S is specified)
