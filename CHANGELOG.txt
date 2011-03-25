@@ -1,5 +1,15 @@
 CHANGELOG
 =========
+20110323   -Fixed a bug so that zxfer can work with remote hosts via ssh.
+             Very cool!
+	   -Added "vscan,nbmand" to the list of properties not supported
+	      by FreeBSD.
+20110321   -Added "xattr" to list of properties not supported on FreeBSD,
+             so that zxfer works on FreeBSD 8.2 out of the box.
+	   -Changed the beep option, breaking backwards compatibility for
+	     the sake of having more logical switches. The B is a "big beep",
+	     alerting the user for success or failure. The b is a "small beep"
+	     that will only sound on error.
 20101211 ver 0.9.0 -Added some output for errors.
            -Added proviso to man page about backing up/restoring FreeBSD
 	     root directories.
