@@ -98,27 +98,27 @@
 zxfer_version="0.9.2"
 
 # Default values
-option_l=0
-option_L=""
-option_S=0
-option_o=""
-option_P=0
-option_R=""
-option_N=""
-option_d=0
-option_n=0
-option_F=""
-option_s=0
-option_m=0
-option_v=0
-option_f=""
-option_k=0
-option_e=0
-option_u=0
 option_b=0
 option_B=0
+option_d=0
+option_e=0
+option_f=""
+option_F=""
+option_k=0
+option_l=0
+option_L=""
+option_o=""
 option_O=""
+option_P=0
+option_R=""
+option_m=0
+option_n=0
+option_N=""
+option_S=0
+option_s=0
 option_T=""
+option_u=0
+option_v=0
 exit_status=1 # defaults to failure
 
 services=""
