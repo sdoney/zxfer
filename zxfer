@@ -91,7 +91,6 @@
 #           [-o option1=value1,option2=value2...] [-L value] [-u snapshot]
 #           destination
 #     zxfer [-h]
-
 #
 #           Where destination is a ZFS filesystem e.g.  poolname/fsname
 
@@ -1480,6 +1479,8 @@ do
     O)
       LZFS="ssh $OPTARG /sbin/zfs"
       option_O="ssh $OPTARG "
+      echo "Option O not implemented yet. Do not use."
+      exit 1 
       ;;
     P)
       option_P=1
@@ -1496,6 +1497,8 @@ do
     T)
       RZFS="ssh $OPTARG /sbin/zfs"
       option_T="ssh $OPTARG "
+      echo "Option T not implemented yet. Do not use."
+      exit 1 
       ;;
     u)
       option_u=1

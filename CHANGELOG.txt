@@ -1,9 +1,13 @@
 CHANGELOG
 =========
-20110323   -Fixed a bug so that zxfer can work with remote hosts via ssh.
-             Very cool!
+20110327   -Added "Compatibility" section to man page.
+           -Added to the man page a warning not to tack switches with arguments
+             on the end of a list of switches without arguments.
+	   -Alphabetized the options in the man page, and in the script.
+20110323   -Started fixing a bug so that zxfer can work with remote hosts via 
+             ssh.
 	   -Added "vscan,nbmand" to the list of properties not supported
-	      by FreeBSD.
+	     by FreeBSD.
 20110321   -Added "xattr" to list of properties not supported on FreeBSD,
              so that zxfer works on FreeBSD 8.2 out of the box.
 	   -Changed the beep option, breaking backwards compatibility for

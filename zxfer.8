@@ -34,7 +34,7 @@
 .\"
 .\"         Where destination is a ZFS filesystem e.g.  poolname/fsname
 
-.Dd March 23, 2011
+.Dd March 27, 2011
 .Dt ZXFER 8
 .Os
 .Sh NAME
@@ -161,7 +161,21 @@ options as they function specifically with
 .Va send
 mode, followed by options as they work specifically to 
 .Xr rsync 1 
-aka -S mode.
+aka -S mode. 
+.Pp
+Please note that options with arguments (e.g. -R, -N
+and the like) can not be concatenated after other options.
+(e.g. -vFdR
+.Va source
+.Va destination
+will fail. You should use instead: 
+-vFd -R 
+.Va source
+.Va destination
+)
+Otherwise this will confuse getopts and 
+.Xr zfs 8 
+will complain that "dataset already exists".
 .Pp
 The options are as follows:
 .Bl -tag -width indent
@@ -174,7 +188,7 @@ To save insult being added to injury, the failure beep will not play
 during errors that
 .Nm
 discovers in the initialization phase, beeps will only occur if an error
-has the possibility of occuring after significant time has elapsed.
+has the possibility of occurring after significant time has elapsed.
 .Pp
 .It Fl B
 Large (B)eep mode. Similar to (b) but suitable for use at the end of a script.
@@ -620,17 +634,6 @@ not connected to a machine, e.g. if you are using HDD as backup media. Note that
 .Cm zfs send
 will also refuse to work if you have newer snapshots on destination than
 the most recent common snapshot on both, so it's easier to just enable it.)
-.It Fl F
-(F)orce rollback, i.e. specify the
-.Op Fl F
-in
-.Cm zfs receive -F .
-This will cause a rollback of the destination filesystem to the last snapshot,
-before receiving. There is no real reason not to specify this option in most
-cases, as this will prevent
-.Cm zfs receive
-halting due to the filesystem having changed since the last
-snapshot (and even mounting will cause a change).
 .It
 .Op Fl v
 seeing lots of output (verbose)
@@ -677,7 +680,7 @@ to copy the backup to. Then we would issue the following command:
 .Pp
 Note that the trailing slash enables us to copy the 
 .Pa zroot
-filesystem directly to the the pool level, and then the child filesystems
+filesystem directly to the pool level, and then the child filesystems
 below that, which is where we want them. If the pool name is to be changed,
 the command becomes:
 .Pp
@@ -902,6 +905,16 @@ exits 0 on success, 1 on an error and 2 if a command line option is incorrect.
 .Xr rsync 1 ,
 .Xr zfs 1 ,
 .Xr zpool 1
+.Sh COMPATIBILITY
+.Nm 
+is tested (somewhat) before release on FreeBSD 8.2-RELEASE and Solaris
+Express 11. It
+was tested on the last version of OpenSolaris and FreeBSD 8.1 as of 0.9.0 and
+may continue to function correctly, but in order to ease my workload I am
+only going to test 
+.Nm 
+against Solaris Express 11 and whatever version I run of FreeBSD, in my case
+8.2.
 .Sh THANKS
 Thanks to Constantin Gonzalez for his constant collaboration, guidance, and
 his 
