@@ -95,7 +95,7 @@
 #           Where destination is a ZFS filesystem e.g.  poolname/fsname
 
 # zxfer version
-zxfer_version="0.9.2"
+zxfer_version="0.9.3"
 
 # Default values
 option_b=0
@@ -161,7 +161,7 @@ usedbysnapshots,usedbydataset,usedbychildren,usedbyrefreservation,\
 version,volsize,mountpoint,mlslabel,keysource,keystatus,rekeydate,encryption"
 
 
-# Properties not supported on FreeBSD 8.0
+# Properties not supported on FreeBSD 8.2
 fbsd_readonly_properties="aclmode,aclinherit,devices,nbmand,shareiscsi,vscan,xattr"
 
 
@@ -251,65 +251,73 @@ relaunch() {
 # Checks that options make sense, etc.
 #
 consistency_check() {
-
-# disallow backup and restore of properties at same time
-if [ $option_k -eq 1 -a $option_e -eq 1 ]; then
-  echo "Error: You cannot bac(k)up and r(e)store properties at the same time."
-  usage
-  exit 1
-fi
-
-# disallow both beep modes, enforce using one or the other.
-if [ $option_b -eq 1 -a $option_B -eq 1 ]; then
-  echo "Error: You cannot use both beep modes at the same time."
-  usage
-  exit 1
-fi
-
-if [ $option_S -eq 1 ]; then
-  # rsync mode
+  # disallow backup and restore of properties at same time
+  if [ $option_k -eq 1 -a $option_e -eq 1 ]; then
+    echo "Error: You cannot bac(k)up and r(e)store properties at the same time."
+    usage
+    exit 1
+  fi
   
-  # check for incompatible options
-  if [ "$option_F" = "-F" ]; then
-    echo "Error: -F option cannot be used with -S (rsync mode)"
+  # disallow both beep modes, enforce using one or the other.
+  if [ $option_b -eq 1 -a $option_B -eq 1 ]; then
+    echo "Error: You cannot use both beep modes at the same time."
     usage
     exit 1
   fi
-
-  if [ $option_s -eq 1 ]; then
-    echo "Error: -s option cannot be used with -S (rsync mode)"
-    usage
-    exit 1
-  fi
-
-  if [ "$RZFS" != "/sbin/zfs" ]; then
-    echo "Error: -r option cannot be used with -S (rsync mode)"
-    usage
-    exit 1
-  fi
-
-  if [ $option_m -eq 1 ]; then
-    echo "Error: -m option cannot be used with -S (rsync mode)"
-    usage
-    exit 1
-  fi
-
-else
-  #zfs send mode
-
-  # check for incompatible options
-  if [ "$option_f" != "" ]; then
-    echo "Error: -f option can only be used with -S (rsync mode)"
-    usage
-    exit 1
-  fi
-
-  if [ "$option_L" != "" ]; then
-    echo "Error: -L option can only be used with -S (rsync mode)"
-    usage
-    exit 1
-  fi
-fi 
+  
+  if [ $option_S -eq 1 ]; then
+    # rsync mode
+    
+    # check for incompatible options
+    if [ "$option_F" = "-F" ]; then
+      echo "Error: -F option cannot be used with -S (rsync mode)"
+      usage
+      exit 1
+    fi
+  
+    if [ $option_s -eq 1 ]; then
+      echo "Error: -s option cannot be used with -S (rsync mode)"
+      usage
+      exit 1
+    fi
+  
+    if [ "$RZFS" != "/sbin/zfs" ]; then
+      echo "Error: -r option cannot be used with -S (rsync mode)"
+      usage
+      exit 1
+    fi
+  
+    if [ $option_m -eq 1 ]; then
+      echo "Error: -m option cannot be used with -S (rsync mode)"
+      usage
+      exit 1
+    fi
+  
+  else
+    #zfs send mode
+  
+    # check for incompatible options
+    if [ "$option_f" != "" ]; then
+      echo "Error: -f option can only be used with -S (rsync mode)"
+      usage
+      exit 1
+    fi
+  
+    if [ "$option_L" != "" ]; then
+      echo "Error: -L option can only be used with -S (rsync mode)"
+      usage
+      exit 1
+    fi
+  
+    # disallow migration related options and remote transfers at same time
+    if [ "$option_T" != "" -o "$option_O" != "" ]; then
+      if [ $option_m -eq 1 -o "$services" != "" ]; then
+        echo "Error: You cannot migrate to or from a remote host."
+        usage
+        exit 1
+      fi
+    fi
+  fi 
 }
 
 
@@ -1050,8 +1058,14 @@ $override_value=$override_source,"
     done
   fi
 
+  # Get uname of the destination machine, local or remote 
+  if [ "$option_T" = "" ]; then
+    osname=$(uname)
+  else 
+    osname=$($option_Tuname)
+  fi
+
   # Remove several properties not supported on FreeBSD.
-  osname=$(uname)
   if [ "$osname" = "FreeBSD" ]; then
     readonly_properties=$(echo "$readonly_properties,$fbsd_readonly_properties")
   fi
@@ -1382,8 +1396,9 @@ get_backup_properties() {
   while [ $found_backup_file -eq 0 ]
   do
    backup_file_dir=$($LZFS get -H -o value mountpoint $suspect_fs)
-    if [ -r $backup_file_dir/$backup_file_extension.$suspect_fs_tail ]; then
-      restored_backup_file_contents=$(cat $backup_file_dir/\
+    #if [ -r $backup_file_dir/$backup_file_extension.$suspect_fs_tail ]; then  # before remote transfer
+    if $option_O [ -r $backup_file_dir/$backup_file_extension.$suspect_fs_tail ]; then
+      restored_backup_file_contents=$($option_O cat $backup_file_dir/\
 $backup_file_extension.$suspect_fs_tail)
       found_backup_file=1
     else
@@ -1479,8 +1494,6 @@ do
     O)
       LZFS="ssh $OPTARG /sbin/zfs"
       option_O="ssh $OPTARG "
-      echo "Option O not implemented yet. Do not use."
-      exit 1 
       ;;
     P)
       option_P=1
@@ -1497,8 +1510,6 @@ do
     T)
       RZFS="ssh $OPTARG /sbin/zfs"
       option_T="ssh $OPTARG "
-      echo "Option T not implemented yet. Do not use."
-      exit 1 
       ;;
     u)
       option_u=1
@@ -1826,7 +1837,6 @@ else
     sourcefs=`echo $source | cut -d@ -f1`
     sourcefslast=`echo $sourcefs | sed -e "s%.*/%%"`
 
-   
     # Prepare the actual destination (actual_dest) as used in zfs receive. 
     # A trailing slash means that the root filesystem is transferred straight
     # into the dest fs, no trailing slash means that this fs is created
@@ -1901,15 +1911,31 @@ $backup_file_extension.$is_tail"
   backup_date=$(date)
   backup_file_contents="$backup_file_header#backup_date:$backup_date\
 $backup_file_contents"
-  if [ $option_n -eq 0 ]; then
-    echo "$backup_file_contents" | tr ";" "\n" > $backup_file_dir/\
+
+  # Unfortunately I know of no way to use the one command to either echo
+  # through ssh or locally. 
+  if [ "$option_T" = "" ]; then
+    if [ $option_n -eq 0 ]; then
+      echo "$backup_file_contents" | tr ";" "\n" > $backup_file_dir/\
 $backup_file_extension.$is_tail || \
-          { echo "Error writing backup file. Is \
+            { echo "Error writing backup file. Is \
 filesystem mounted?"; beep; exit 1; }
-  else
-    echo "echo "$backup_file_contents" | tr \";\" \"\\\n\" > \
+    else
+      echo "echo "$backup_file_contents" | tr \";\" \"\\\n\" > \
 $backup_file_dir/$backup_file_extension.$is_tail"
+    fi
+  else
+    if [ $option_n -eq 0 ]; then
+      echo "$backup_file_contents" | tr ";" "\n" | $option_T "cat > \
+$backup_file_dir/$backup_file_extension.$is_tail" || \
+            { echo "Error writing backup file. Is \
+filesystem mounted?"; beep; exit 1; }
+    else
+      echo "echo "$backup_file_contents" | tr \";\" \"\\\n\" | $option_T \
+\"cat > $backup_file_dir/$backup_file_extension.$is_tail\""
+    fi
   fi
+
 fi
   
 exit_status=0

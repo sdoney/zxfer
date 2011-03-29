@@ -33,7 +33,6 @@
 .\"     zxfer [-h]
 .\"
 .\"         Where destination is a ZFS filesystem e.g.  poolname/fsname
-
 .Dd March 27, 2011
 .Dt ZXFER 8
 .Os
@@ -204,7 +203,7 @@ A word of warning:
 In order to allow the restoration of filesystems within the hierarchy,
 .Nm
 will begin at the level you specify, and traverse the filesystem hierarchy back
-to the pool level until if finds an appropriate .zxfer_backup_info
+to the pool level until it finds an appropriate .zxfer_backup_info
 file or fails. It will use the first such file it comes across, so be careful about
 backing up from multiple individual levels of the same filesystem hierarchy.
 .It Fl h
@@ -343,7 +342,6 @@ they are:
 .Va shareiscsi ,
 .Va vscan ,
 .Va xattr .
-
 If using -S, all filesystems in the pools containing the source directories/files 
 will be created on the destination if they aren't in existence already, whether
 they are to hold files/directories or not.
@@ -421,11 +419,6 @@ and so does your local machine if
 is not also used.  This option is currently in testing.
 .Pp
 The syntax for this command is -O user@remote_host. e.g. -O root@192.168.0.1
-.It Fl r
-(r)emotely transfer via
-.Xr ssh 1 . 
-.Pp
-The syntax for this command is: -r user@remote_host.
 .It Fl R
 (R)ecursively replicate all filesystems under the specified source. If not 
 specifying 
@@ -885,14 +878,17 @@ appropriately).
 .Cm -PmFdv -o compression=gzip -N new_pool/location/fs original_pool
 .Pp
 .Ss Ex13 - Backup a pool to a remote host
+This is not yet implemented. Ignore this example. The following shows
+how the command should work when implemented.
+.Pp
 Notice this is the same as in Ex2 with the exception of option
-.Op Fl r ,
+.Op Fl T ,
 and uses the same options which
 have been explained in that example.
 Here is the command:
 .Pp
 .Nm
-.Cm -dFkPv -o copies=2,compression=lzjb -r root@192.168.123.1 -R zroot backup01/pools
+.Cm -dFkPv -o copies=2,compression=lzjb -T root@192.168.123.1 -R zroot backup01/pools
 .Pp
 Note also that to restore, just use
 .Op Fl r 
