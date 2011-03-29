@@ -77,11 +77,7 @@
 # There are several properties in FreeBSD that when set via "zfs create" 
 # or "zfs set" will have the source stay as default while others are 
 # set to local. This does not have any real impacts because these properties
-# are not inheritable. The properties are: quota, reservation, canmount, 
-# refquota, refreservation. 
-
-# Also note that FreeBSD does not support the following properties yet:
-# devices,aclmode,aclinherit,shareiscsi, so don't try and set them.
+# are not inheritable. See definition for $fbsd_readonly_properties. 
 
 #     zxfer [-FdnPsv] [-k | -e] [-b | -B] {-N path/to/src | -R path/to/src}
 #           [-m [c FMRI|pattern[ FMRI|pattern]...]]] [-O user@host]
@@ -164,6 +160,8 @@ version,volsize,mountpoint,mlslabel,keysource,keystatus,rekeydate,encryption"
 # Properties not supported on FreeBSD 8.2
 fbsd_readonly_properties="aclmode,aclinherit,devices,nbmand,shareiscsi,vscan,xattr"
 
+# Properties not supported on Solaris Express 11
+solexp_readonly_properties="jailed,aclmode,shareiscsi"
 
 #
 # Beeps a success sound if -B enabled, and a failure sound if -b or -B enabled.
@@ -196,8 +194,8 @@ usage() {
 cat <<EOT
 usage: 
      zxfer [-FdnPsv] [-k | -e] [-b | -B] {-N path/to/src | -R path/to/src}
-           [-m [c FMRI|pattern[ FMRI|pattern]...]]] [-r user@host]
-           [-o option1=value1,option2=value2...] destination
+           [-m [c FMRI|pattern[ FMRI|pattern]...]]] [-O user@host]
+           [-T user@host] [-o option1=value1,option2=value2...] destination
      zxfer {-S} [-dvPnl] [-k | -e] [-b | -B] [-f /path/to/rsfile]
            {-R /path/to/src1,path/to/src2... | -N /path/to/src1,path/to/src2...}
            [-o option1=value1,option2=value2...] [-L value] [-u snapshot]
@@ -1058,16 +1056,38 @@ $override_value=$override_source,"
     done
   fi
 
-  # Get uname of the destination machine, local or remote 
+  # Get uname of the destination (target) machine, local or remote 
   if [ "$option_T" = "" ]; then
-    osname=$(uname)
+    target_osname=$(uname)
   else 
-    osname=$($option_Tuname)
+    target_osname=$($option_Tuname)
+    if [ "$target_osname" = "" ]; then
+      # VERY UGLY HACK - not sure why 2 lines above does not work
+      # If not FreeBSD, then SunOS by default.
+      target_osname="SunOS"    
+    fi 
+  fi
+
+  # Get uname of source (origin) machine, local or remote 
+  if [ "$option_O" = "" ]; then
+    origin_osname=$(uname)
+  else 
+    origin_osname=$($option_Ouname)
+    if [ "$origin_osname" = "" ]; then
+      # VERY UGLY HACK - not sure why 2 lines above does not work
+      # If not FreeBSD, then SunOS by default.
+      origin_osname="SunOS"    
+    fi 
   fi
 
   # Remove several properties not supported on FreeBSD.
-  if [ "$osname" = "FreeBSD" ]; then
+  if [ "$target_osname" = "FreeBSD" ]; then
     readonly_properties=$(echo "$readonly_properties,$fbsd_readonly_properties")
+  fi
+
+  # Remove several properties not supported on Solaris Express.
+  if [ "$target_osname" = "SunOS" -a "$origin_osname" = "FreeBSD" ]; then
+    readonly_properties=$(echo "$readonly_properties,$solexp_readonly_properties")
   fi
 
   # Remove the readonly properties and values.
