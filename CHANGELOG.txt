@@ -1,5 +1,7 @@
 CHANGELOG
 =========
+20110331   -Some refactoring, updating man page, and refactoring to make
+             it work on S11E.
 20110329 ver 0.9.3
            -Tested local transfers on FBSD 8.2 and SE11. Tested remote
              transfers on FBSD 8.2.

@@ -33,7 +33,7 @@
 .\"     zxfer [-h]
 .\"
 .\"         Where destination is a ZFS filesystem e.g.  poolname/fsname
-.Dd March 29, 2011
+.Dd March 31, 2011
 .Dt ZXFER 8
 .Os
 .Sh NAME
@@ -424,15 +424,24 @@ and so does your local machine if
 .Op Fl T
 is not also used.  
 .Pp
-This option has been somewhat tested in FreeBSD 8.2 and
-appears to be working. (Consider it alpha level.) That is the only 
-operating system that it has been tested on, and possibly/probably won't 
+This option has been somewhat tested in FreeBSD 8.2 and Solaris 11 Express
+and
+appears to be working. (Consider it alpha level.) These are the only 
+operating systems that it has been tested on, and possibly/probably won't 
 work on others. 
 .Pp
 Note also that transferring between different operating systems and even 
 different
 versions of the same operating system (e.g. FreeBSD 8.1 and 8.2) has not been
-tested and will probably fail. It's not likely I will test this thoroughly in
+tested and will probably fail or give unexpected results. As 
+.Xr zfs 1 ,
+has been developed, new properties have come into being, and those properties
+have either been supported in FreeBSD or they haven't. So it is difficult to
+know what a user would like to have such properties be when they are copied
+from one OS (or version) to another. At least between OS versions, you are
+advised to use the same OS and zpool and zfs version from source to
+destination.
+It's not likely I will test this thoroughly in
 the near future, as it requires an estimated n^2 number of tested transfers,
 where n is the number of operating system variations to support. 
 You are welcome to try it though, and report bugs back to me.
@@ -443,7 +452,24 @@ the transfer will be piped from the remote origin to the local machine and from
 there to the remote target machine, which will be slow as it is 
 not a direct path.
 .Pp
-The syntax for this command is -O user@remote_host. e.g. -O root@192.168.0.1
+The syntax for this command is -O user@remote_host. 
+.Pp
+e.g. -O root@192.168.0.1
+.Pp
+Please note that if you are using Solaris, you will most likely need to use 
+"pfexec" (similar to sudo) and have a suitably priveleged user. Copy the
+quotes and spacing exactly:
+.Pp 
+e.g. -O "user1@192.168.0.1 pfexec"
+.Pp
+The reason this works is because the commands that are related to
+reading/writing/modifying data will be prefaced with in normal circumstances:
+.Pp
+ssh root@192.168.0.1 command ...
+.Pp
+So with Solaris, specifying the pfexec at the end results in:
+.Pp
+ssh user1@192.168.0.1 pfexec command ...
 .It Fl R
 (R)ecursively replicate all filesystems under the specified source. If not 
 specifying 
@@ -488,6 +514,12 @@ for notes, usage advice and warnings, as this option is very similar in
 operation.
 .Pp
 The syntax for this command is -T user@remote_host. e.g. -T root@192.168.1.2
+.Pp
+Again, please note that if you are using Solaris, you will most likely need to use 
+"pfexec" (similar to sudo) and have a suitably priveleged user. Copy the
+quotes and spacing exactly:
+.Pp 
+e.g. -T "user1@192.168.0.1 pfexec"
 .El
 .Ss Rsync mode 
 (i.e. -S is specified)
@@ -899,7 +931,11 @@ appropriately).
 Notice this is the same as in Ex2 with the exception of option
 .Op Fl T ,
 and uses the same options which
-have been explained in that example.
+have been explained in that example. Note that if you use Solaris you will
+most likely need to specify pfexec (refer to the 
+.Op Fl O 
+section).
+
 Here is the command:
 .Pp
 .Nm
@@ -907,7 +943,8 @@ Here is the command:
 .Pp
 .Ss Ex14 - Restore a pool from a remote host
 Use the following command, assuming that you are restoring from a situation as
-in Ex13.
+in Ex13. Again, if using Solaris refer to 
+.Op Fl O .
 .Pp
 .Nm
 .Cm -deFPv -O root@192.168.123.1 -R backup01/pools/storage/ storage

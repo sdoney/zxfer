@@ -91,7 +91,7 @@
 #           Where destination is a ZFS filesystem e.g.  poolname/fsname
 
 # zxfer version
-zxfer_version="0.9.3"
+zxfer_version="0.9.4"
 
 # Default values
 option_b=0
@@ -126,13 +126,21 @@ destination=""
 backup_file_extension=".zxfer_backup_info"
 backup_file_contents=""
 
+# operating systems
+source_os=""
+dest_os=""
+home_os=$(uname)
+
 # as in the "cp" man page
 trailing_slash=0
 
 LZFS="/sbin/zfs"
 RZFS="/sbin/zfs"
 
-rs_locations="/usr/local/bin /usr/local/sbin /usr /usr/sfw /opt /usr/bin"
+LCAT=""
+
+rsync_locations="/usr/local/bin,/usr/local/sbin,/usr,/usr/sfw,/opt,/usr/bin"
+cat_locations="/bin,/usr/bin"
 
 # specific to rsync mode
 snapshot_name="zxfertempsnap"
@@ -150,7 +158,9 @@ default_rsync_options="-lptgoD --inplace --relative -H --numeric-ids"
 # 3 properties that are technically not readonly but we will
 # remove them from the override list as it does not make
 # sense to try and transfer them - version, volsize and mountpoint
-# Others have been added since.
+# Others have been added since. This is a potential refactor point
+# to split into two lists, $readonly_properties and $zxfer_unsupported_properties
+
 readonly_properties="type,creation,used,available,referenced,\
 compressratio,mounted,version,primarycache,secondarycache,\
 usedbysnapshots,usedbydataset,usedbychildren,usedbyrefreservation,\
@@ -186,6 +196,76 @@ if [ $option_b -eq 1 -o $option_B -eq 1 ]; then
 fi
 }
 
+
+#
+# Gets a $(uname), i.e. the operating system, for origin or target, if remote.
+# Takes: $1=either $option_O or $option_T
+#
+get_os() {
+  input_optionts=$1
+  output_os=""
+
+  # Get uname of the destination (target) machine, local or remote 
+  if [ "$input_optionts" = "" ]; then
+    output_os=$(uname)
+  else 
+    output_os=$($input_optionts uname)
+    echo "$output_os"
+  fi
+}
+
+
+#
+# Gets the correct paths needed depending on the OS
+# Gets a $(uname), i.e. the operating system, for origin or target, if remote.
+# Takes: $1=either $option_O or $option_T
+#        $2=space separated list of paths
+#        $3=program name
+# Outout:$output_path
+get_path() {
+  input_optionts=$1
+  program_locations=$2
+  program_locations=$(echo "$program_locations" | tr -s "," " " )
+  program_name=$3
+
+  path_found=0
+  for output_path in $program_locations; do
+    if $input_optionts [ -e "$output_path/$program_name" ]; then
+      path_found=1
+      output_path="$output_path/$program_name"
+      break
+    fi
+  done
+
+  if [ $path_found -eq 0 ]; then
+    echo "Error: Can't find $program_name. Zxfer expects to find $program_name \
+in one of the following locations:"
+    echo "$program_locations"
+    exit 1
+  fi
+}
+
+
+#
+# Initializes OS and local/remote specific variables
+#
+init_variables() {
+  get_os "$option_T"
+  dest_os="$output_os"
+  
+  get_os "$option_O"
+  source_os="$output_os"
+  
+  if [ $option_e -eq 1 ]; then
+    get_path "$option_O" "$cat_locations" "cat"
+    LCAT="$output_path"
+  fi
+
+  if [ $option_S -eq 1 ]; then
+    get_path "" "$rsync_locations" "rsync"
+    RSYNC="$output_path"
+  fi
+ }
 
 #
 # Print out usage information
@@ -1056,37 +1136,13 @@ $override_value=$override_source,"
     done
   fi
 
-  # Get uname of the destination (target) machine, local or remote 
-  if [ "$option_T" = "" ]; then
-    target_osname=$(uname)
-  else 
-    target_osname=$($option_Tuname)
-    if [ "$target_osname" = "" ]; then
-      # VERY UGLY HACK - not sure why 2 lines above does not work
-      # If not FreeBSD, then SunOS by default.
-      target_osname="SunOS"    
-    fi 
-  fi
-
-  # Get uname of source (origin) machine, local or remote 
-  if [ "$option_O" = "" ]; then
-    origin_osname=$(uname)
-  else 
-    origin_osname=$($option_Ouname)
-    if [ "$origin_osname" = "" ]; then
-      # VERY UGLY HACK - not sure why 2 lines above does not work
-      # If not FreeBSD, then SunOS by default.
-      origin_osname="SunOS"    
-    fi 
-  fi
-
   # Remove several properties not supported on FreeBSD.
-  if [ "$target_osname" = "FreeBSD" ]; then
+  if [ "$dest_os" = "FreeBSD" ]; then
     readonly_properties=$(echo "$readonly_properties,$fbsd_readonly_properties")
   fi
 
   # Remove several properties not supported on Solaris Express.
-  if [ "$target_osname" = "SunOS" -a "$origin_osname" = "FreeBSD" ]; then
+  if [ "$dest_os" = "SunOS" -a "$source_os" = "FreeBSD" ]; then
     readonly_properties=$(echo "$readonly_properties,$solexp_readonly_properties")
   fi
 
@@ -1418,7 +1474,7 @@ get_backup_properties() {
    backup_file_dir=$($LZFS get -H -o value mountpoint $suspect_fs)
     #if [ -r $backup_file_dir/$backup_file_extension.$suspect_fs_tail ]; then  # before remote transfer
     if $option_O [ -r $backup_file_dir/$backup_file_extension.$suspect_fs_tail ]; then
-      restored_backup_file_contents=$($option_O cat $backup_file_dir/\
+      restored_backup_file_contents=$($option_O $LCAT $backup_file_dir/\
 $backup_file_extension.$suspect_fs_tail)
       found_backup_file=1
     else
@@ -1442,6 +1498,33 @@ $backup_file_extension.$suspect_fs_tail)
 }
 
 
+#
+# Writes the backup properties to a file that is in the directory
+# corresponding to the destination filesystem
+#
+write_backup_properties() {
+  is_tail=$(echo "$initial_source" | sed -e 's/.*\///g')
+  backup_file_dir=$($RZFS get -H -o value mountpoint $destination)
+  echov "Writing backup info to location $backup_file_dir/\
+$backup_file_extension.$is_tail"
+  backup_file_header="#zxfer property backup file;#version:$zxfer_version\
+;#R options:$option_R;#N options:$option_N;#destination:$destination\
+;#initial_source:$is_tail;#option_S:$option_S;"
+  backup_date=$(date)
+  backup_file_contents="$backup_file_header#backup_date:$backup_date\
+$backup_file_contents"
+
+  # Write the backup file; doing it this way prevents S11E from throwing
+  # "Permission denied" errors, and ALSO works with local or remote.
+  if [ $option_n -eq 0 ]; then
+    echo "echo \"$backup_file_contents\" | tr \";\" \"\n\" > \
+$backup_file_dir/$backup_file_extension.$is_tail" | $option_T sh || \
+{ echo "Error writing backup file. Is filesystem mounted?"; beep; exit 1; }
+  else
+    echo "echo \"echo \"$backup_file_contents\" | tr \";\" \"\n\" > \
+$backup_file_dir/$backup_file_extension.$is_tail\" | $option_T sh"
+  fi
+}
 
 
 #
@@ -1548,13 +1631,14 @@ done
 shift `expr $OPTIND - 1`
 destination=$1
 
-
 # Basic consistency checking
 if [ $# -lt 1 ]; then
   echo "Error: Need a destination."
   usage
   exit 1
 fi
+
+init_variables
 
 consistency_check
 
@@ -1589,26 +1673,6 @@ if [ $option_S -eq 1 ]; then
   # clones is prohibitive in comparison. It also stops automatic snapshotting taking
   # snapshots of the clones and creating further havoc.
 
-  #Find rsync location and set RSYNC to it.
-  rsync_found=0
-  for rsync_location in $rs_locations; do
-    if [ -e "$rsync_location/rsync" ]; then
-      rsync_found=1
-      break
-    fi
-  done
-
-  
-  # If we can't find rsync, exit
-  if [ $rsync_found -eq 0 ]; then
-    echo "Error: Can't find rsync. zxfer expects to find rsync in one\
-   of the following locations:"
-    echo "$rs_locations"
-    usage
-    exit 1
-  fi
-  
-  RSYNC="$rsync_location/rsync"
  
   # destroys old snapshots used in any previous (incomplete) use of
   # the script's functionality, if not using a custom snapshot
@@ -1921,41 +1985,7 @@ fi
 
 # writes property backup info to file
 if [ $option_k -eq 1 ]; then
-  is_tail=$(echo "$initial_source" | sed -e 's/.*\///g')
-  backup_file_dir=$($RZFS get -H -o value mountpoint $destination)
-  echov "Writing backup info to location $backup_file_dir/\
-$backup_file_extension.$is_tail"
-  backup_file_header="#zxfer property backup file;#version:$zxfer_version\
-;#R options:$option_R;#N options:$option_N;#destination:$destination\
-;#initial_source:$is_tail;#option_S:$option_S;"
-  backup_date=$(date)
-  backup_file_contents="$backup_file_header#backup_date:$backup_date\
-$backup_file_contents"
-
-  # Unfortunately I know of no way to use the one command to either echo
-  # through ssh or locally. 
-  if [ "$option_T" = "" ]; then
-    if [ $option_n -eq 0 ]; then
-      echo "$backup_file_contents" | tr ";" "\n" > $backup_file_dir/\
-$backup_file_extension.$is_tail || \
-            { echo "Error writing backup file. Is \
-filesystem mounted?"; beep; exit 1; }
-    else
-      echo "echo "$backup_file_contents" | tr \";\" \"\\\n\" > \
-$backup_file_dir/$backup_file_extension.$is_tail"
-    fi
-  else
-    if [ $option_n -eq 0 ]; then
-      echo "$backup_file_contents" | tr ";" "\n" | $option_T "cat > \
-$backup_file_dir/$backup_file_extension.$is_tail" || \
-            { echo "Error writing backup file. Is \
-filesystem mounted?"; beep; exit 1; }
-    else
-      echo "echo "$backup_file_contents" | tr \";\" \"\\\n\" | $option_T \
-\"cat > $backup_file_dir/$backup_file_extension.$is_tail\""
-    fi
-  fi
-
+  write_backup_properties
 fi
   
 exit_status=0
