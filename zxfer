@@ -210,7 +210,6 @@ get_os() {
     output_os=$(uname)
   else 
     output_os=$($input_optionts uname)
-    echo "$output_os"
   fi
 }
 
