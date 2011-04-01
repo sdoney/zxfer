@@ -1,5 +1,7 @@
 CHANGELOG
 =========
+20110331 ver 0.9.5
+           -Changed download package to have a directory within, to suit ports.
 20110331 ver 0.9.4
            -Some refactoring, updating man page, and testing to make
              it work better on S11E.
