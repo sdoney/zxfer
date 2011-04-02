@@ -680,8 +680,6 @@ get_zfs_list_rsync_mode() {
       for fs in $temp_fs_list_comma; do
         # count the "/" in the line, should be equal or greater to option_L
 	slash_no=$(echo "$fs" | $HAWK '$0= NF-1' FS=/)
-	echo "$slash_no" >> slash_no1.txt #DEBUG
-	echo "***************************" >> slash_no1.txt #DEBUG
 	if [ "$slash_no" -lt "$option_L" ]; then
 	  echo "Error: If using option L, ensure that all source files and\
  directories are contained in filesystems with as many \"/\" as L."
@@ -690,8 +688,6 @@ get_zfs_list_rsync_mode() {
 	fi
 	old_root_fs=$root_fs
 	root_fs=$(echo "$fs" | $HAWK '{for (i=1; i <= '$inc_option_L'; i++) printf("%s%c", $i, (i=='$inc_option_L')?ORS:OFS)}' FS=/ OFS=/ ORS=)
-	echo "$root_fs" >> root_fs_no1.txt #DEBUG
-	echo "***************************" >> root_fs_no1.txt #DEBUG
         if [ "$root_fs" != "$old_root_fs" -a "$old_root_fs" != "" ]; then
 	  echo "Error: No common root filesystem. If using option L, ensure \
 that each source file/directory comes from a common filesystem, and that the
