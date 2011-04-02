@@ -91,7 +91,7 @@
 #           Where destination is a ZFS filesystem e.g.  poolname/fsname
 
 # zxfer version
-zxfer_version="0.9.5"
+zxfer_version="0.9.6"
 
 # Default values
 option_b=0
@@ -138,6 +138,7 @@ LZFS="/sbin/zfs"
 RZFS="/sbin/zfs"
 
 LCAT=""
+HAWK="/usr/bin/awk"   # location of awk or gawk on home OS
 
 rsync_locations="/usr/local/bin,/usr/local/sbin,/usr,/usr/sfw,/opt,/usr/bin"
 cat_locations="/bin,/usr/bin"
@@ -263,6 +264,10 @@ init_variables() {
   if [ $option_S -eq 1 ]; then
     get_path "" "$rsync_locations" "rsync"
     RSYNC="$output_path"
+  fi
+
+  if [ "$home_os" = "SunOS" ]; then
+    HAWK="/usr/bin/gawk"
   fi
  }
 
@@ -674,7 +679,9 @@ get_zfs_list_rsync_mode() {
     if [ "$option_L" != "" ];then
       for fs in $temp_fs_list_comma; do
         # count the "/" in the line, should be equal or greater to option_L
-	slash_no=$(echo "$fs" | gawk '$0= NF-1' FS=/)
+	slash_no=$(echo "$fs" | $HAWK '$0= NF-1' FS=/)
+	echo "$slash_no" >> slash_no1.txt #DEBUG
+	echo "***************************" >> slash_no1.txt #DEBUG
 	if [ "$slash_no" -lt "$option_L" ]; then
 	  echo "Error: If using option L, ensure that all source files and\
  directories are contained in filesystems with as many \"/\" as L."
@@ -682,7 +689,9 @@ get_zfs_list_rsync_mode() {
 	  exit 1
 	fi
 	old_root_fs=$root_fs
-	root_fs=$(echo "$fs" | gawk '{for (i=1; i <= '$inc_option_L'; i++) printf("%s%c", $i, (i=='$inc_option_L')?ORS:OFS)}' FS=/ OFS=/ ORS=)
+	root_fs=$(echo "$fs" | $HAWK '{for (i=1; i <= '$inc_option_L'; i++) printf("%s%c", $i, (i=='$inc_option_L')?ORS:OFS)}' FS=/ OFS=/ ORS=)
+	echo "$root_fs" >> root_fs_no1.txt #DEBUG
+	echo "***************************" >> root_fs_no1.txt #DEBUG
         if [ "$root_fs" != "$old_root_fs" -a "$old_root_fs" != "" ]; then
 	  echo "Error: No common root filesystem. If using option L, ensure \
 that each source file/directory comes from a common filesystem, and that the
