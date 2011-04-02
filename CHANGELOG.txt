@@ -1,5 +1,7 @@
 CHANGELOG
 =========
+20110402   -Added a section "SNAPSHOTS" to the man page, to express that
+             zxfer is designed to work with snapshots, and how it does so.
 20110331 ver 0.9.5
            -Changed download package to have a directory within, to suit ports.
 20110331 ver 0.9.4

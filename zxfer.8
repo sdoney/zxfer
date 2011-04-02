@@ -153,6 +153,59 @@ like alpha level software - i.e. trust it at your own risk.
 Modifying an example first is a good way to start using the script, as
 there are some options (e.g. -d and -F in normal mode) that are in practice
 always used.
+.Sh SNAPSHOTS
+.Nm
+in Normal mode is designed to be used to regularly backup a system
+that has a snapshot regime in place. This regime could be rolling snapshots
+or it could be snapshots of decaying frequency. Irrespective of what this
+regime is, there should be one. At the very least, rolling snapshots are
+easily implementable and do not require an excessive amount of space unless
+most of the data on the pool is constantly changing over a short period of
+time. 
+.Pp
+In most cases the benefits of regularly snapshotting outweigh the
+disadvantages, because doing so allows you to easily recover files that have
+been modified or deleted. This is especially true as you can simply copy
+those files directly from the old snapshots through the 
+.Pa .zfs/snapshot/... 
+directory at the mountpoint of a ZFS filesystem. A filesystem wide rollback
+is not needed.
+.Pp
+When making a backup, you need to be able to copy
+the state of the pool or filesystem when it is frozen at one particular 
+point in time. If we don't do this, the contents of the filesystem are likely
+to be in an inconsistent state, and the backup potentially useless. Fortunately
+there is a way to get such a consistent, frozen state in a ZFS pool or
+filesystem, and that is via 
+.Xr zfs 8
+snapshots.
+.Pp
+Since taking a backup should be a regular, painless element of
+systems administration, wouldn't it be nice to be able to transfer
+only what has changed since the last backup (the delta)? It would, and
+we can do exactly that if we have:
+.Pp
+.Bl -enum -offset indent -compact
+.It
+A regular snapshotting regime.
+.It
+A backup frequency such that there is at least one common snapshot on both our
+backup and our current pool or filesystem. 
+.El
+.Pp
+e.g. If we use a rolling snapshot regime
+where snapshots are destroyed after 7 days, we should use
+.Nm
+to perform our backups every 6 days or hopefully less. If that time
+period is exceeded we can still perform the backup, it just means that the
+entire pool or filesystem will need to be transferred.
+.Pp
+If for whatever reason you have not snapshotted a pool or filesystem you
+desire to transfer, you may still use zxfer to create a snapshot for you
+before that transfer. See the
+.Op Fl s
+option.
+.Pp
 .Sh OPTIONS
 Common options are listed, followed by
 options as they function specifically with
@@ -622,7 +675,9 @@ restoring files/directories without having to roll back.
 .El
 .Sh EXAMPLES
 Note that some of these example commands are lengthy, so be sure to fix
-the line wrapping appropriately.
+the line wrapping appropriately. Also if you wonder why
+.Nm
+isn't transferring anything, please read the section titled SNAPSHOTS.
 .Ss Ex1 - Backup a pool (including snapshots and properties)
 We have a pool called 
 .Pa storage
