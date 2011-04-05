@@ -155,14 +155,91 @@ there are some options (e.g. -d and -F in normal mode) that are in practice
 always used.
 .Sh SNAPSHOTS
 .Nm
-in Normal mode is designed to be used to regularly backup a system
-that has a snapshot regime in place. This regime could be rolling snapshots
-or it could be snapshots of decaying frequency. Irrespective of what this
-regime is, there should be one. At the very least, rolling snapshots are
-easily implementable and do not require an excessive amount of space unless
-most of the data on the pool is constantly changing over a short period of
-time. 
+in Normal mode as a backup/restore solution is designed to be used 
+hand-in-hand with a regular snapshotting
+regime. If there is no regular snapshotting regime in place then the results
+won't be nearly as good. 
+.Nm
+would still be useful to reliably and easily copy
+a pool for example, but you would be missing the main point of the program.
 .Pp
+This snapshotting regime could be First-In-First-Out
+(FIFO)
+or it could be Grandfather-Father-Son (GFS). Irrespective of what this
+regime is, there should be one. At the very least, FIFO snapshots are
+easily implementable and do not require much more space, unless
+most of the data on the pool is constantly changing over a short period of
+time. If you can afford it, or your data accumulation pattern is such that
+there is very little difference in storage requirements, GFS is better.
+.Pp
+.Sh TAPE VS HDD POOL BACKUP
+It is a change in mindset to go from tape backup to pools of
+HDD, so here we explain how this works. A tape typically represents a current
+snapshot of your system, and
+you keep old tapes (which are physically a lot more reliable than HDD)
+for archive, which are essentially old snapshots of your data. If you used
+a GFS system of tape backup, you would need 7+4+12 tapes for your first year of
+operations, or 23 tapes. This gives you 23 snapshots. In all likelihood
+those tapes are not stored in 23 separate locations, so your chance of
+losing everything would be equivalent to at least the probabilities of disasters
+happening in as many locations as you keep your backups.
+.Pp
+With a
+.Nm
+plus regular snapshot backup system, you would use several HDD pools
+for backup.
+I would recommend using at least 3 pools, in several offsite and offline
+locations. More is obviously better. These pools would need to be able to
+be easily connected and disconnected to your system by a fast connection such
+as SATA/SAS, USB3, or Thunderbolt. Either a dedicated enclosure or several
+HDD docks
+could be used, provided that the disks themselves are prevented from being
+damaged in transit. Each pool should be RAIDZ2, so that if an
+individual HDD dies, you can tolerate another HDD dying during a re-silver.
+.Pp
+At each backup, you are essentially syncing all the snapshots on your
+live system with the backup. This means that each HDD backup pool can hold
+the same historical record as the equivalent 23 + N year tape archive. The
+conceptual change here is that now the storing of historical data is 
+divorced from the media itself. Your data can survive in much the same way
+that genetic information encoded in error-correcting DNA is transmitted 
+through multiple generations of higher order but very finite organisms, 
+without needing an "archival quality" organism. * 
+.Pp
+When the HDDs in a backup pool age to the point of being too small or
+perhaps a judgment call is made that they are too old to be reliable
+(e.g. 5 years old), you retire them and put new HDDs into service.
+(This is also a handy way of upgrading the speed of your live pool,
+because you can
+use larger, faster HDDs for that purpose and demote the old HDDs to backup
+duty.) All the while, ZFS hashes along with the redundancy in RAIDZ2
+put a stop to any silent data corruption.
+.Pp
+The one potential advantage that tapes have is where there is some sort of
+silent, insidious process that is destroying your historical data at each
+backup.  e.g. Someone changes the
+.Nm
+command used, or a bug causes snapshots to be deleted on the primary server
+(and replicated to the backup pools). In order to counter the first risk,
+one bullet point on the next
+.Nm
+feature list will be the ability to prevent past years/months snapshots
+from being deleted. However, there is still a risk of
+someone compromising a machine and destroying the backups silently. This
+is probably best mitigated by keeping a pool or two that is only updated
+once a year or so, and before updating it, using a separate machine (not
+connected to the internet, probably running from a LiveCD)
+that is used to compare the common snapshots on a recent backup bit for 
+bit to prove that they are good.
+* This is not to disparage
+archival quality media. Humanity should have media capable
+of surviving a 5+ year absence of funding, staff, electricity, etc., if only
+for keeping a record of history and technology. As a practical matter though,
+if a business or similar organization does not have the money to replace 
+some HDDs every year (or worst case after a few years), it has
+much more to worry about than disaster recovery.
+.Pp
+.Sh MORE ON SNAPSHOTS
 In most cases the benefits of regularly snapshotting outweigh the
 disadvantages, because doing so allows you to easily recover files that have
 been modified or deleted, intentionally or otherwise.
@@ -194,7 +271,7 @@ A backup frequency such that there is at least one common snapshot on both our
 backup and our current pool or filesystem. 
 .El
 .Pp
-e.g. If we use a rolling snapshot regime
+e.g. If we use a FIFO snapshot regime
 where snapshots are destroyed after 7 days, we should use
 .Nm
 to perform our backups every 6 days or hopefully less. If that time
@@ -203,7 +280,9 @@ entire pool or filesystem will need to be transferred, which could take a
 long time.
 .Pp
 If for whatever reason you have not snapshotted a pool or filesystem you
-desire to transfer, you may still use zxfer to create a snapshot for you
+desire to transfer, you may still use
+.Nm
+to create a current snapshot for you
 before that transfer. See the
 .Op Fl s
 option.
@@ -502,7 +581,9 @@ where n is the number of operating system variations to support.
 You are welcome to try it though, and report bugs back to me.
 .Pp
 Note that if at all possible, do not try and be clever
-and run zxfer with both an origin and a target host. While this may work, 
+and run
+.Nm
+with both an origin and a target host. While this may work, 
 the transfer will be piped from the remote origin to the local machine and from
 there to the remote target machine, which will be slow as it is 
 not a direct path.
@@ -1080,4 +1161,6 @@ donating at some stage in the future.
 .Nm
 is distributed under the BSD license. See the file COPYING for details.
 .Pp
-The website for zxfer is http://www.zxfer.org.
+The website for 
+.Nm
+is http://www.zxfer.org.

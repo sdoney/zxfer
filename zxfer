@@ -91,7 +91,7 @@
 #           Where destination is a ZFS filesystem e.g.  poolname/fsname
 
 # zxfer version
-zxfer_version="0.9.6"
+zxfer_version="0.9.7"
 
 # Default values
 option_b=0
@@ -134,14 +134,13 @@ home_os=$(uname)
 # as in the "cp" man page
 trailing_slash=0
 
-LZFS="/sbin/zfs"
-RZFS="/sbin/zfs"
+WHICH=$( which which )
+LZFS=$( ${WHICH} zfs )
+RZFS=$LZFS
+
 
 LCAT=""
-HAWK="/usr/bin/awk"   # location of awk or gawk on home OS
-
-rsync_locations="/usr/local/bin,/usr/local/sbin,/usr,/usr/sfw,/opt,/usr/bin"
-cat_locations="/bin,/usr/bin"
+AWK=$( ${WHICH} awk )   # location of awk or gawk on home OS
 
 # specific to rsync mode
 snapshot_name="zxfertempsnap"
@@ -216,37 +215,6 @@ get_os() {
 
 
 #
-# Gets the correct paths needed depending on the OS
-# Gets a $(uname), i.e. the operating system, for origin or target, if remote.
-# Takes: $1=either $option_O or $option_T
-#        $2=space separated list of paths
-#        $3=program name
-# Outout:$output_path
-get_path() {
-  input_optionts=$1
-  program_locations=$2
-  program_locations=$(echo "$program_locations" | tr -s "," " " )
-  program_name=$3
-
-  path_found=0
-  for output_path in $program_locations; do
-    if $input_optionts [ -e "$output_path/$program_name" ]; then
-      path_found=1
-      output_path="$output_path/$program_name"
-      break
-    fi
-  done
-
-  if [ $path_found -eq 0 ]; then
-    echo "Error: Can't find $program_name. Zxfer expects to find $program_name \
-in one of the following locations:"
-    echo "$program_locations"
-    exit 1
-  fi
-}
-
-
-#
 # Initializes OS and local/remote specific variables
 #
 init_variables() {
@@ -257,19 +225,18 @@ init_variables() {
   source_os="$output_os"
   
   if [ $option_e -eq 1 ]; then
-    get_path "$option_O" "$cat_locations" "cat"
-    LCAT="$output_path"
+    LCAT=$( ${option_O} ${WHICH} cat )
   fi
 
   if [ $option_S -eq 1 ]; then
-    get_path "" "$rsync_locations" "rsync"
-    RSYNC="$output_path"
+    RSYNC=$( ${WHICH} rsync )
   fi
 
   if [ "$home_os" = "SunOS" ]; then
-    HAWK="/usr/bin/gawk"
+    AWK=$( ${WHICH} gawk )
   fi
  }
+
 
 #
 # Print out usage information
@@ -363,8 +330,8 @@ consistency_check() {
       exit 1
     fi
   
-    if [ "$RZFS" != "/sbin/zfs" ]; then
-      echo "Error: -r option cannot be used with -S (rsync mode)"
+    if [ "$option_O" != "" -o "$option_T" != "" ]; then
+      echo "Error: -O or -T option cannot be used with -S (rsync mode)"
       usage
       exit 1
     fi
@@ -679,7 +646,7 @@ get_zfs_list_rsync_mode() {
     if [ "$option_L" != "" ];then
       for fs in $temp_fs_list_comma; do
         # count the "/" in the line, should be equal or greater to option_L
-	slash_no=$(echo "$fs" | $HAWK '$0= NF-1' FS=/)
+	slash_no=$(echo "$fs" | $AWK '$0= NF-1' FS=/)
 	if [ "$slash_no" -lt "$option_L" ]; then
 	  echo "Error: If using option L, ensure that all source files and\
  directories are contained in filesystems with as many \"/\" as L."
@@ -687,7 +654,7 @@ get_zfs_list_rsync_mode() {
 	  exit 1
 	fi
 	old_root_fs=$root_fs
-	root_fs=$(echo "$fs" | $HAWK '{for (i=1; i <= '$inc_option_L'; i++) printf("%s%c", $i, (i=='$inc_option_L')?ORS:OFS)}' FS=/ OFS=/ ORS=)
+	root_fs=$(echo "$fs" | $AWK '{for (i=1; i <= '$inc_option_L'; i++) printf("%s%c", $i, (i=='$inc_option_L')?ORS:OFS)}' FS=/ OFS=/ ORS=)
         if [ "$root_fs" != "$old_root_fs" -a "$old_root_fs" != "" ]; then
 	  echo "Error: No common root filesystem. If using option L, ensure \
 that each source file/directory comes from a common filesystem, and that the

@@ -1,5 +1,10 @@
 CHANGELOG
 =========
+20110405   -Again, added to and modified the man page significantly, to
+              explain tape vs HDD backup.
+20110404   -Made zxfer more portable, by testing for the actual $PATH via
+             "which" instead of guessing which directories the programs might
+	     live in.
 20110402   -Added a section "SNAPSHOTS" to the man page, to express that
              zxfer is designed to work with snapshots, and how it does so.
 	   -Made zxfer use awk in FreeBSD, gawk in Solaris, so that there
