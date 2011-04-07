@@ -502,7 +502,7 @@ grandfather_test() {
     echo "destroy the offending snapshot. Also double check that your"
     echo "snapshot management tool isn't erroneously deleting source snapshots."
     echo "Note that for option g to work correctly, you should set it just"
-    echo "above a number of days that will preclude \"son\" snapshots from"
+    echo "above a number of days that will preclude \"father\" snapshots from"
     echo "being encountered."
     echo
     usage; beep
