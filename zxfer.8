@@ -401,7 +401,8 @@ to work.
 date) at and above which snapshots on the destination won't be deleted. For use
 with
 .Op Fl d .
-This allows a safeguard to protect the "grandfathers" in a GFS snapshot
+This allows a safeguard to protect the "grandfathers" in a 
+Grandfather-Father-Son (GFS) snapshot
 collection on a destination. Grandfathers (as defined by
 .Nm )
 are the snapshots that never get
@@ -410,18 +411,18 @@ deleted (often yearly, half yearly or quarterly snapshots).
 Note that for
 this to work properly, you must set
 .Op Fl g
-so that it does not inadvertently protect the "sons" which will be deleted on
+so that it does not inadvertently protect the "fathers" which will be deleted on
 the source by your snapshot management tool, and hence will need to be deleted
 on the
 destination. If you go a long time between backups with an otherwise well set
 .Op Fl g ,
-you may have sons on the destination that are the age of grandfathers and so
+you may have fathers on the destination that are the age of grandfathers and so
 you will need to either relax the number of days provided for, or manually
-delete those sons.
+delete those fathers.
 .Pp
 For example,
 specifying -g 375 should protect snapshots as old or older than 375 days,
-which could be useful where grandfathers are yearly and monthly sons are
+which could be useful where grandfathers are yearly and monthly fathers are
 kept for a period of a year or less. This gives us 9 days of grace period
 to make a backup without throwing an error, but do note that during 
 this grace period grandfathers
@@ -500,7 +501,7 @@ The syntax for this command is -O user@remote_host.
 e.g. -O root@192.168.0.1
 .Pp
 Please note that if you are using Solaris, you will most likely need to use 
-"pfexec" (similar to sudo) and have a suitably priveleged user. Copy the
+"pfexec" (similar to sudo) and have a suitably privileged user. Copy the
 quotes and spacing exactly:
 .Pp 
 e.g. -O "user1@192.168.0.1 pfexec"
@@ -673,7 +674,7 @@ We have a pool called
 .Pa storage
 and we want to back it up to
 .Pa backup01/pools ,
-along with all its snapshots. Grandfather snapshots are yearly, sons are
+along with all its snapshots. Grandfather snapshots are yearly, fathers are
 monthly and are deleted after 365 days.
 The resultant filesystem hierarchy should look like so:
 .Bl -bullet -offset indent -compact
