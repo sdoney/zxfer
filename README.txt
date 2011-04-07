@@ -31,6 +31,13 @@ You will need to be root before starting.
 $ su
 
 FreeBSD:
+The best way is to simply install via ports. Recommended.
+a) Go to ports directory.
+# cd /usr/ports/sysutils/zxfer
+b) Install
+# make install
+
+Here are the directions for those who want to do it manually.
 a) Copy zxfer to /usr/local/sbin.
 # cp zxfer /usr/local/sbin
 b) Copy zxfer.8.gz to /usr/local/man/man8
