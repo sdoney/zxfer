@@ -137,13 +137,12 @@ home_os=$(uname)
 # as in the "cp" man page
 trailing_slash=0
 
-WHICH=$( which which )
-LZFS=$( ${WHICH} zfs )
+LZFS=$( which zfs )
 RZFS=$LZFS
 
 
 LCAT=""
-AWK=$( ${WHICH} awk )   # location of awk or gawk on home OS
+AWK=$( which awk )   # location of awk or gawk on home OS
 
 current_date=$(date +%s)  # current date in seconds from 1970
 
@@ -230,15 +229,15 @@ init_variables() {
   source_os="$output_os"
   
   if [ $option_e -eq 1 ]; then
-    LCAT=$( ${option_O} ${WHICH} cat )
+    LCAT=$( ${option_O} which cat )
   fi
 
   if [ $option_S -eq 1 ]; then
-    RSYNC=$( ${WHICH} rsync )
+    RSYNC=$( which rsync )
   fi
 
   if [ "$home_os" = "SunOS" ]; then
-    AWK=$( ${WHICH} gawk )
+    AWK=$( which gawk )
   fi
  }
 
