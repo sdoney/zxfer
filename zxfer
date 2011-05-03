@@ -93,7 +93,7 @@
 #
 
 # zxfer version
-zxfer_version="0.9.7"
+zxfer_version="0.9.8"
 
 # Default values
 option_b=0
@@ -156,7 +156,7 @@ dont_write_backup=0
 ensure_writable=0    # when creating/setting properties, ensures readonly=off
 
 # default rsync options - see http://www.daemonforums.org/showthread.php?t=3948
-default_rsync_options="-lptgoD --inplace --relative -H --numeric-ids"
+default_rsync_options="-clptgoD --inplace --relative -H --numeric-ids"
 
 # note that I am including in the "readonly properties list
 # 3 properties that are technically not readonly but we will
@@ -559,10 +559,12 @@ grep ^$source@) > /dev/null 2>&1
         break
       fi
     done
+
+    if [ $mark_snap_for_deletion = 1 -a "$option_g" != "" ]; then
+      grandfather_test $dest_snap
+    fi
+
     if [ $mark_snap_for_deletion = 1 -a $option_d -eq 1 ]; then
-      if [ "$option_g" != "" ]; then
-        grandfather_test $dest_snap
-      fi
       echov "Destroying destination snapshot $dest_snap."
       if [ $option_n -eq 0 ]; then
         $RZFS destroy $dest_snap || \
@@ -765,6 +767,26 @@ specify is \"2\"."
 
 
 #
+# Creates a list of exclude options to pass to rsync, so that empty directories
+# on source corresponding to filesystem mountpoints don't cause a delete
+# on the destination
+# Takes $opt_srs_all_inc_fs, $opt_src_fs
+# Outputs $exclude_options, exclude options to be added to other rsync options
+get_exclude_list() {
+  exclude_options=""
+
+  exclude_dir_list=$(echo "$opt_srs_all_inc_fs" | grep ^$opt_src_fs | \
+grep -v "^$opt_src_fs$")
+  exclude_dir_list=$(echo "$exclude_dir_list" | sed -e "s%^$opt_src_fs%%g")
+
+  for exd in $exclude_dir_list; do
+    exclude_options="--exclude=$exd $exclude_options"
+  done
+  exclude_options=$(echo "$exclude_options" | sed -e "s% $%%g")
+}
+
+
+#
 # Transfers a source via rsync
 # Takes $source_type, where:
 # n = non-recursive
@@ -831,7 +853,7 @@ sed -e "s%^$opt_src_fs_mountpoint%%g")
       rs_source=\
 "$opt_src_fs_mountpoint/.zfs/snapshot/$snapshot_name/.$opt_src_tail"
     fi
-
+    
     # We can think of using L option as restoring, and without L option as
     # backing up. When we back up we copy the root filesystem and everything
     # in it into the destination. (e.g. zroot, zroot/tmp etc. goes into
@@ -868,36 +890,42 @@ sed -e "s%^$opt_src_fs_mountpoint%%g")
       rs_dest=$(echo "$rs_dest" | sed -e "s%^/[^/]*%%g")
     fi
 
+    full_rs_options="$rsync_options"
+
+    get_exclude_list
+    full_rs_options="$full_rs_options $exclude_options"
+    
     if [ $source_type = "r" ]; then
       # Appends a slash and the "-r" option, to suit rsync
-      echov "Using rsync to recursively transfer $rs_source to $rs_dest with \
-options -r $rsync_options"
-      rs_source="-r $rs_source/"
+      rs_source="$rs_source/"
+      full_rs_options="$full_rs_options -r"
+      if [ $option_d -eq "1" ]; then
+        full_rs_options="$full_rs_options --del"
+      fi
     else
       # Appends a slash and the "-d" option if a directory, to suit rsync
       if [ -d "$rs_source" ]; then
         # if a directory
-        echov "Using rsync to transfer $rs_source to $rs_dest with \
-options -d $rsync_options"
-       rs_source="-d $rs_source/"
+        rs_source="$rs_source/"
+        full_rs_options="$full_rs_options -d"
+        if [ $option_d -eq "1" ]; then
+          full_rs_options="$full_rs_options --del"
+        fi
       else
         # if a file
         #rs_dest=$(echo "$rs_dest" | sed -e 's%/[^/]*$%%g')
-        echov "Using rsync to transfer $rs_source to $rs_dest with \
-options $rsync_options"
       fi
     fi
-    
-    if [ $option_d -eq "1" ]; then
-      rs_source="--del $rs_source"
-    fi
+
+    echov "Using rsync to recursively transfer $rs_source to $rs_dest with \
+options $full_rs_options"
 
     # Now that we have something to feed rsync, we will call it.
     if [ $option_n -eq 0 ]; then
-      $RSYNC $rsync_options $rs_source $rs_dest || \
+      $RSYNC $full_rs_options $rs_source $rs_dest || \
         { echo "Error when executing rsync."; beep; exit 1; }
     else
-      echo "$RSYNC $rsync_options $rs_source $rs_dest"
+      echo "$RSYNC $full_rs_options $rs_source $rs_dest"
     fi
 
   done # End of sub-filesystem loop
@@ -933,6 +961,26 @@ check_snapshot() {
   # When using -s or -m, we don't want the source to be a snapshot.
   [ -n "$initial_sourcesnap" ] && \
     { echo "Snapshots are not allowed as a source."; exit 1; }
+}
+
+
+# Prepare the actual destination (actual_dest) as used in zfs receive. 
+# Uses $trailing_slash, $source, $part_of_source_to_delete, $destination,
+# $initial_source, $trailing_slash_dest_tail
+# Output is $actual_dest
+get_actual_dest() {
+  # A trailing slash means that the root filesystem is transferred straight
+  # into the dest fs, no trailing slash means that this fs is created
+  # inside the destination.
+  if [ $trailing_slash -eq 0 ]; then
+    # If the original source was backup/test/zroot and we are transferring
+    # backup/test/zroot/tmp/foo, $dest_tail is zroot/tmp/foo
+    dest_tail=$(echo "$source" | sed -e "s%^$part_of_source_to_delete%%g")
+    actual_dest="$destination"/"$dest_tail"
+  else
+    trailing_slash_dest_tail=$(echo "$source" | sed -e "s%^$initial_source%%g")
+    actual_dest="$destination$trailing_slash_dest_tail"
+  fi
 }
 
 
@@ -1932,6 +1980,17 @@ else
     get_zfs_list
   fi 
 
+  if [ "$option_g" != "" ]; then
+    echov "Checking all snapshots marked for deletion for grandfather status..."
+    old_option_d=$option_d
+    option_d=0 # turn off delete so that we are only checking snapshots
+    for source in $recursive_source_list; do
+      get_actual_dest
+      inspect_delete_snap
+    done
+    option_d=$old_option_d
+    echov "Grandfather check passed."
+  fi 
 
   # main loop that copies the filesystems
   for source in $recursive_source_list; do
@@ -1939,19 +1998,7 @@ else
     sourcefs=`echo $source | cut -d@ -f1`
     sourcefslast=`echo $sourcefs | sed -e "s%.*/%%"`
 
-    # Prepare the actual destination (actual_dest) as used in zfs receive. 
-    # A trailing slash means that the root filesystem is transferred straight
-    # into the dest fs, no trailing slash means that this fs is created
-    # inside the destination.
-    if [ $trailing_slash -eq 0 ]; then
-      # If the original source was backup/test/zroot and we are transferring
-      # backup/test/zroot/tmp/foo, $dest_tail is zroot/tmp/foo
-      dest_tail=$(echo "$source" | sed -e "s%^$part_of_source_to_delete%%g")
-      actual_dest="$destination"/"$dest_tail"
-    else
-      trailing_slash_dest_tail=$(echo "$source" | sed -e "s%^$initial_source%%g")
-      actual_dest="$destination$trailing_slash_dest_tail"
-    fi
+    get_actual_dest
   
     # If using the -m feature, check if the source is mounted, 
     # otherwise there's no point in us doing the remounting.

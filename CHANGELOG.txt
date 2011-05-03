@@ -1,5 +1,15 @@
 CHANGELOG
 =========
+20110503 ver 0.9.8
+           -Added -c option to default rsync options list. Note that this
+	     much increases reliability of backups, at the expense of speed.
+	   -Removed --del option when transferring single files with -N.
+           -Fixed bug in rsync transfer, where --del option caused
+	     attempted deletes of filesystem mountpoints on destination.
+           -Made the grandfather protection option check everything BEFORE
+	     any deletions would occur. If grandfathers are being deleted,
+	     chances are something is wrong, so better to fail before doing
+	     damage.
 20110407 ver 0.9.7
            -Removed the extra backup related content from the man page
              as more suitable for external documentation. KISS.
