@@ -10,6 +10,9 @@ CHANGELOG
 	     any deletions would occur. If grandfathers are being deleted,
 	     chances are something is wrong, so better to fail before doing
 	     damage.
+	   -Added a "p" switch to persist in face of rsync errors.
+	   -Added an "E" to enable passing of excludes to rsync (useful
+	     for avoiding transfer of zpool.cache)
 20110407 ver 0.9.7
            -Removed the extra backup related content from the man page
              as more suitable for external documentation. KISS.

@@ -100,6 +100,7 @@ option_b=0
 option_B=0
 option_d=0
 option_e=0
+option_E=""
 option_f=""
 option_g=""
 option_F=""
@@ -108,6 +109,7 @@ option_l=0
 option_L=""
 option_o=""
 option_O=""
+option_p=0
 option_P=0
 option_R=""
 option_m=0
@@ -895,11 +897,11 @@ sed -e "s%^$opt_src_fs_mountpoint%%g")
     get_exclude_list
     full_rs_options="$full_rs_options $exclude_options"
     
-    if [ $source_type = "r" ]; then
+    if [ "$source_type" = "r" ]; then
       # Appends a slash and the "-r" option, to suit rsync
       rs_source="$rs_source/"
       full_rs_options="$full_rs_options -r"
-      if [ $option_d -eq "1" ]; then
+      if [ $option_d -eq 1 ]; then
         full_rs_options="$full_rs_options --del"
       fi
     else
@@ -908,7 +910,7 @@ sed -e "s%^$opt_src_fs_mountpoint%%g")
         # if a directory
         rs_source="$rs_source/"
         full_rs_options="$full_rs_options -d"
-        if [ $option_d -eq "1" ]; then
+        if [ $option_d -eq 1 ]; then
           full_rs_options="$full_rs_options --del"
         fi
       else
@@ -917,13 +919,22 @@ sed -e "s%^$opt_src_fs_mountpoint%%g")
       fi
     fi
 
+    if [ "$option_E" != "" ]; then    # add user-specified exclude patterns.
+      option_E=$(echo "$option_E" | sed -e "s% $%%g")
+      full_rs_options="$full_rs_options $option_E"
+    fi
+
     echov "Using rsync to recursively transfer $rs_source to $rs_dest with \
 options $full_rs_options"
 
     # Now that we have something to feed rsync, we will call it.
     if [ $option_n -eq 0 ]; then
-      $RSYNC $full_rs_options $rs_source $rs_dest || \
-        { echo "Error when executing rsync."; beep; exit 1; }
+      if [ $option_p -eq 1 ]; then
+        $RSYNC $full_rs_options $rs_source $rs_dest  # persist in face of error
+      else
+        $RSYNC $full_rs_options $rs_source $rs_dest || \
+{ echo "Error when executing rsync."; beep; exit 1; }
+      fi
     else
       echo "$RSYNC $full_rs_options $rs_source $rs_dest"
     fi
@@ -1600,7 +1611,7 @@ $backup_file_dir/$backup_file_extension.$is_tail\" | $option_T sh"
 #
 
 # Read command line switches
-while getopts bBc:def:g:FhklL:lmnN:o:O:PPR:sST:u:v?: i
+while getopts bBc:deE:f:g:FhklL:lmnN:o:O:pPPR:sST:u:v?: i
 do
   case $i in
     b)
@@ -1620,6 +1631,9 @@ do
       # Need to transfer properties, just the backed up properties
       # are substituted 
       option_P=1 
+      ;;
+    E)
+      option_E="--exclude=$OPTARG $option_E"
       ;;
     f)
       option_f="$OPTARG"
@@ -1664,6 +1678,9 @@ do
       LZFS="ssh $OPTARG /sbin/zfs"
       option_O="ssh $OPTARG "
       ;;
+    p)
+      option_p=1
+      ;;
     P)
       option_P=1
       ;;
@@ -1707,7 +1724,6 @@ fi
 init_variables
 
 consistency_check
-
 
 if [ $option_S -eq 1 ]; then
   # rsync mode

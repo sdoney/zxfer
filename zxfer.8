@@ -572,6 +572,15 @@ e.g. -T "user1@192.168.0.1 pfexec"
 (d)elete files on the destination that do not exist on the source. This is
 equivalent to 
 .Cm rsync --del .
+.It Fl E
+Pass (E)xclude patterns to
+.Xr rsync 1 .
+e.g. If you want to specify "--exclude=/zfs/zpool.cache" when
+.Xr rsync 1
+is called, then
+use "-E /zfs/zpool.cache". You can specify this option as many times as you
+like, and it will pass each exclude pattern to 
+.Xr rsync 1 .
 .It Fl f
 Specify a (f)ile that contains a list of options to feed to 
 .Cm rsync .
@@ -614,6 +623,11 @@ It works similarly but is not recursive. e.g.  specifying -N
 .Pa /tmp
 will transfer only
 .Pa /tmp .
+.It Fl p
+(p)ersist through 
+.Xr rsync 1
+errors. This saves having to feed directories individually to
+.Nm .
 .It Fl R
 (R)ecursively replicate all directories and files under the specified source(s).
 If specifying 
@@ -1035,7 +1049,9 @@ worth reading regularly (his non-ZFS stuff is good too).
 .Pp
 Thanks also to the creators of rsync for their excellent tool.
 .Sh AUTHORS
-zfs-replicate was written by Constantin Gonzalez. Ivan Nash Dreckman 
+The basis for
+.Nm ,
+zfs-replicate, was written by Constantin Gonzalez. Ivan Nash Dreckman 
 built upon that work to create the additional code and documentation
 required for 
 .Nm .
@@ -1075,4 +1091,4 @@ is distributed under the BSD license. See the file COPYING for details.
 .Pp
 The website for 
 .Nm
-is http://www.zxfer.org.
+is http://www.zxfer.org. For additional help, consult the wiki on that site.
