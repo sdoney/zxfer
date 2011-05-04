@@ -23,16 +23,17 @@
 .\" LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
 .\" OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 .\" SUCH DAMAGE.
-.\"     zxfer [-FdnPsv] [-k | -e] [-b | -B] {-N path/to/src | -R path/to/src}
+.\"     zxfer [-dFnPsv] [-k | -e] [-b | -B] {-N path/to/src | -R path/to/src}
 .\"           [-m [c FMRI|pattern[ FMRI|pattern]...]]] [-O user@host]
-.\"           [-T user@host] [-o option1=value1,option2=value2...] destination
-.\"     zxfer {-S} [-dvPnl] [-k | -e] [-b | -B] [-f /path/to/rsfile]
-.\"           {-R /path/to/src1,path/to/src2... | -N /path/to/src1,path/to/src2...}
-.\"           [-o option1=value1,option2=value2...] [-L value] [-u snapshot]
+.\"           [-T user@host] [-o option1=value1,option2=value2...] [-g days]
 .\"           destination
+.\"     zxfer {-S} [-dilpPnv] [-k | -e] [-b | -B] [-f /path/to/rsfile]
+.\"           {-R /path/to/src1,path/to/src2... | -N /path/to/src1,path/to/src2...}
+.\"           [-o option1=value1,option2=value2...] [-E pattern] [-L value]
+.\"           [-u snapshot] destination
 .\"     zxfer [-h]
 .\"
-.\"         Where destination is a ZFS filesystem e.g.  poolname/fsname
+.\"           Where destination is a ZFS filesystem e.g.  poolname/fsname
 .Dd May 04, 2011
 .Dt ZXFER 8
 .Os
@@ -53,7 +54,7 @@
 .Ar destination
 .Nm
 .Brq -S
-.Op Fl dlpPnv
+.Op Fl dilpPnv
 .Op Fl k | e
 .Op Fl b | B
 .Op Fl f Ar /path/to/rsfile
@@ -597,6 +598,11 @@ It has been suggested that it might be more convenient to be able to specify
 custom options to rsync by means of a switch and the options in quotes or
 some other delimiting character. If
 there is enough feedback I will consider implementing this option.
+.It Fl i
+(i)nclude directories corresponding to ZFS filesystem mountpoints on the 
+destination when transferring. The default is to exclude them, since the
+destination may correspond to a filesystem from another pool mounted there,
+which has its own data and would be restored independently.
 .It Fl l
 Treat (l)egacy mountpoints as being equal to "/". If this is not enabled,
 .Nm 

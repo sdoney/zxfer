@@ -83,14 +83,13 @@
 #           [-m [c FMRI|pattern[ FMRI|pattern]...]]] [-O user@host]
 #           [-T user@host] [-o option1=value1,option2=value2...] [-g days]
 #           destination
-#     zxfer {-S} [-dlpPnv] [-k | -e] [-b | -B] [-f /path/to/rsfile]
+#     zxfer {-S} [-dilpPnv] [-k | -e] [-b | -B] [-f /path/to/rsfile]
 #           {-R /path/to/src1,path/to/src2... | -N /path/to/src1,path/to/src2...}
 #           [-o option1=value1,option2=value2...] [-E pattern] [-L value]
 #           [-u snapshot] destination
 #     zxfer [-h]
 #
 #           Where destination is a ZFS filesystem e.g.  poolname/fsname
-#
 
 # zxfer version
 zxfer_version="0.9.8"
@@ -103,6 +102,7 @@ option_e=0
 option_E=""
 option_f=""
 option_g=""
+option_i=0
 option_F=""
 option_k=0
 option_l=0
@@ -760,6 +760,7 @@ specify is \"2\"."
   # for recursive option
   zfs_list_Ho_name=$($LZFS list -H -o name)
   lzfs_list_Ho_mountpoint=$($LZFS list -Ho mountpoint)
+  rzfs_list_Ho_mountpoint=$($RZFS list -Ho mountpoint)
 
   initial_source=$root_fs
   recursive_source_list=$($LZFS list -Hr -o name $root_fs \
@@ -772,19 +773,40 @@ specify is \"2\"."
 #
 # Creates a list of exclude options to pass to rsync, so that empty directories
 # on source corresponding to filesystem mountpoints don't cause a delete
-# on the destination
+# on the destination, and also optionally to exclude fs mountpoints on dest.
 # Takes $opt_srs_all_inc_fs, $opt_src_fs
 # Outputs $exclude_options, exclude options to be added to other rsync options
 get_exclude_list() {
   exclude_options=""
 
+  # First, exclude known source-side filesystem mountpoints
+  # They will be empty, and if not excluded --del will delete those folders
+  # which will hold valid data on the destination
   exclude_dir_list=$(echo "$opt_srs_all_inc_fs" | grep ^$opt_src_fs | \
 grep -v "^$opt_src_fs$")
   exclude_dir_list=$(echo "$exclude_dir_list" | sed -e "s%^$opt_src_fs%%g")
 
+  # Second, by default we exclude filesystem mountpoints on the
+  # destination, as they will have their own rsync transfer or be
+  # left for an independent restore procedure.
+  if [ $option_i -eq 0 ]; then
+    dest_exclude_dir_list=$(echo "$rzfs_list_Ho_mountpoint" | grep ^$rs_dest\
+ | grep -v "^$rs_dest$")
+    if [ "$rs_dest" != "/" ]; then
+      dest_exclude_dir_list=$(echo "$dest_exclude_dir_list" | \
+sed -e "s%^$rs_dest%%g")
+    fi
+    # now to remove duplicates
+    exclude_dir_list="$exclude_dir_list
+$dest_exclude_dir_list"
+    exclude_dir_list=$(echo "$exclude_dir_list" | sort -u | grep -v "^$")
+  fi
+
   for exd in $exclude_dir_list; do
     exclude_options="--exclude=$exd $exclude_options"
   done
+
+  # Removes space at end
   exclude_options=$(echo "$exclude_options" | sed -e "s% $%%g")
 }
 
@@ -871,13 +893,15 @@ sed -e "s%^$opt_src_fs_mountpoint%%g")
       # "tank/foo/bar/zroot/tmp/yum" becomes (with option_L = 3) "tmp/yum"
       inc_option_L=$(expr $option_L + 1)
       n=1
+      final_opt_src_fs=$opt_src_fs
       while [ ${n} -le ${inc_option_L} ]; do
-        opt_src_fs=$(echo "$opt_src_fs" | sed -e 's%^[^/]*%%' | sed -e 's%^/%%' )
+        final_opt_src_fs=$(echo "$final_opt_src_fs" | sed -e 's%^[^/]*%%'\
+| sed -e 's%^/%%' )
 	n=$((n+1))
       done
     fi
     #rs_dest="/$destination/$opt_src_fs$opt_src_tail"
-    rs_dest="/$destination/$opt_src_fs"
+    rs_dest="/$destination/$final_opt_src_fs"
 
     # if $destination is "zroot/foo/bar", this regex gets "zroot"
     dest_root=$(echo "$destination" | sed -e 's%/.*$%%')
@@ -896,28 +920,24 @@ sed -e "s%^$opt_src_fs_mountpoint%%g")
     full_rs_options="$rsync_options"
 
     get_exclude_list
-    full_rs_options="$full_rs_options $exclude_options"
     
     if [ "$source_type" = "r" ]; then
       # Appends a slash and the "-r" option, to suit rsync
       rs_source="$rs_source/"
-      full_rs_options="$full_rs_options -r"
+      full_rs_options="$full_rs_options $exclude_options -r"
+      if [ $option_d -eq 1 ]; then
+        full_rs_options="$full_rs_options --del"
+      fi
+    elif [ -d "$rs_source" ]; then
+      # Appends a slash and the "-d" option if a directory, to suit rsync
+      # if a directory
+      rs_source="$rs_source/"
+      full_rs_options="$full_rs_options -d"
       if [ $option_d -eq 1 ]; then
         full_rs_options="$full_rs_options --del"
       fi
     else
-      # Appends a slash and the "-d" option if a directory, to suit rsync
-      if [ -d "$rs_source" ]; then
-        # if a directory
-        rs_source="$rs_source/"
-        full_rs_options="$full_rs_options -d"
-        if [ $option_d -eq 1 ]; then
-          full_rs_options="$full_rs_options --del"
-        fi
-      else
-        # if a file
-        #rs_dest=$(echo "$rs_dest" | sed -e 's%/[^/]*$%%g')
-      fi
+        # is a file
     fi
 
     if [ "$option_E" != "" ]; then    # add user-specified exclude patterns.
@@ -1612,7 +1632,7 @@ $backup_file_dir/$backup_file_extension.$is_tail\" | $option_T sh"
 #
 
 # Read command line switches
-while getopts bBc:deE:f:g:FhklL:lmnN:o:O:pPPR:sST:u:v?: i
+while getopts bBc:deE:f:Fg:hiklL:lmnN:o:O:pPPR:sST:u:v?: i
 do
   case $i in
     b)
@@ -1648,6 +1668,9 @@ do
     h)
       usage
       exit 2
+      ;;
+    i)
+      option_i=1
       ;;
     k)
       option_k=1
