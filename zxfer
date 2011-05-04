@@ -1997,7 +1997,7 @@ else
   fi 
 
   if [ "$option_g" != "" ]; then
-    echov "Checking all snapshots marked for deletion for grandfather status..."
+    echov "Checking grandfather status of all snapshots marked for deletion..."
     old_option_d=$option_d
     option_d=0 # turn off delete so that we are only checking snapshots
     for source in $recursive_source_list; do
