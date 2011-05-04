@@ -41,7 +41,7 @@
 .Nd "transfer ZFS filesystems, snapshots, properties, files and directories"
 .Sh SYNOPSIS
 .Nm
-.Op Fl FdnPsv
+.Op Fl dFnPsv
 .Op Fl k | e
 .Op Fl b | B
 .Brq -N path/to/src | -R path/to/src 
@@ -53,12 +53,13 @@
 .Ar destination
 .Nm
 .Brq -S
-.Op Fl dvPnl
+.Op Fl dlpPnv
 .Op Fl k | e
 .Op Fl b | B
 .Op Fl f Ar /path/to/rsfile
 .Brq -R /path/to/src1,path/to/src2... | -N /path/to/src1,path/to/src2...
 .Op Fl o Ar option1=value1,option2=value2...
+.Op Fl E Ar pattern
 .Op Fl L Ar value
 .Op Fl u Ar snapshot
 .Ar destination

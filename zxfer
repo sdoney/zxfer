@@ -79,14 +79,14 @@
 # set to local. This does not have any real impacts because these properties
 # are not inheritable. See definition for $fbsd_readonly_properties. 
 #
-#     zxfer [-FdnPsv] [-k | -e] [-b | -B] {-N path/to/src | -R path/to/src}
+#     zxfer [-dFnPsv] [-k | -e] [-b | -B] {-N path/to/src | -R path/to/src}
 #           [-m [c FMRI|pattern[ FMRI|pattern]...]]] [-O user@host]
 #           [-T user@host] [-o option1=value1,option2=value2...] [-g days]
 #           destination
-#     zxfer {-S} [-dvPnl] [-k | -e] [-b | -B] [-f /path/to/rsfile]
+#     zxfer {-S} [-dlpPnv] [-k | -e] [-b | -B] [-f /path/to/rsfile]
 #           {-R /path/to/src1,path/to/src2... | -N /path/to/src1,path/to/src2...}
-#           [-o option1=value1,option2=value2...] [-L value] [-u snapshot]
-#           destination
+#           [-o option1=value1,option2=value2...] [-E pattern] [-L value]
+#           [-u snapshot] destination
 #     zxfer [-h]
 #
 #           Where destination is a ZFS filesystem e.g.  poolname/fsname
@@ -250,13 +250,14 @@ init_variables() {
 usage() {
 cat <<EOT
 usage: 
-     zxfer [-FdnPsv] [-k | -e] [-b | -B] {-N path/to/src | -R path/to/src}
+     zxfer [-dFnPsv] [-k | -e] [-b | -B] {-N path/to/src | -R path/to/src}
            [-m [c FMRI|pattern[ FMRI|pattern]...]]] [-O user@host]
-           [-T user@host] [-o option1=value1,option2=value2...] destination
-     zxfer {-S} [-dvPnl] [-k | -e] [-b | -B] [-f /path/to/rsfile]
-           {-R /path/to/src1,path/to/src2... | -N /path/to/src1,path/to/src2...}
-           [-o option1=value1,option2=value2...] [-L value] [-u snapshot]
+           [-T user@host] [-o option1=value1,option2=value2...] [-g days]
            destination
+     zxfer {-S} [-dlpPnv] [-k | -e] [-b | -B] [-f /path/to/rsfile]
+           {-R /path/to/src1,path/to/src2... | -N /path/to/src1,path/to/src2...}
+           [-o option1=value1,option2=value2...] [-E pattern] [-L value]
+           [-u snapshot] destination
      zxfer [-h]
 
            Where destination is a ZFS filesystem e.g.  poolname/fsname
