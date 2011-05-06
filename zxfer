@@ -774,7 +774,7 @@ specify is \"2\"."
 # Creates a list of exclude options to pass to rsync, so that empty directories
 # on source corresponding to filesystem mountpoints don't cause a delete
 # on the destination, and also optionally to exclude fs mountpoints on dest.
-# Takes $opt_srs_all_inc_fs, $opt_src_fs
+# Takes $opt_srs_all_inc_fs, $opt_src_fs_modif
 # Outputs $exclude_options, exclude options to be added to other rsync options
 get_exclude_list() {
   exclude_options=""
@@ -782,19 +782,24 @@ get_exclude_list() {
   # First, exclude known source-side filesystem mountpoints
   # They will be empty, and if not excluded --del will delete those folders
   # which will hold valid data on the destination
-  exclude_dir_list=$(echo "$opt_srs_all_inc_fs" | grep ^$opt_src_fs | \
-grep -v "^$opt_src_fs$")
-  exclude_dir_list=$(echo "$exclude_dir_list" | sed -e "s%^$opt_src_fs%%g")
+  exclude_dir_list=$(echo "$opt_srs_all_inc_fs" | grep ^$opt_src_fs_modif | \
+grep -v "^$opt_src_fs_modif$")
+  exclude_dir_list=$(echo "$exclude_dir_list" | sed -e "s%^$opt_src_fs_modif%%g")
 
   # Second, by default we exclude filesystem mountpoints on the
   # destination, as they will have their own rsync transfer or be
   # left for an independent restore procedure.
   if [ $option_i -eq 0 ]; then
+#    dest_exclude_dir_list=$(echo "$rzfs_list_Ho_mountpoint" | \
+#grep ^$opt_src_fs_mountpoint | grep -v "^$opt_src_fs_mountpoint$")
+#    dest_exclude_dir_list=$(echo "$dest_exclude_dir_list" | \
+#sed -e "s%^$opt_src_fs_mountpoint%%g")
     dest_exclude_dir_list=$(echo "$rzfs_list_Ho_mountpoint" | grep ^$rs_dest\
  | grep -v "^$rs_dest$")
-    if [ "$rs_dest" != "/" ]; then
       dest_exclude_dir_list=$(echo "$dest_exclude_dir_list" | \
 sed -e "s%^$rs_dest%%g")
+    if [ "$rs_dest" = "/" ]; then
+      dest_exclude_dir_list=$(echo "$dest_exclude_dir_list" | sed -e 's%^%/%')
     fi
     # now to remove duplicates
     exclude_dir_list="$exclude_dir_list
@@ -851,7 +856,7 @@ rsync_transfer() {
     else 
       sub_opt_source=$opt_source
     fi
-
+    
     # the mountpoint of the above
     opt_src_fs_mountpoint=$($LZFS get -Ho value mountpoint "$opt_src_fs")
 
@@ -887,21 +892,20 @@ sed -e "s%^$opt_src_fs_mountpoint%%g")
     # coping the original root filesystem directly into the destination (which
     # may be a pool) otherwise we would not be able to restore a pool.
     
+    opt_src_fs_modif=$opt_src_fs
     # This will impact the source and destination that we feed to rsync.
     if [ "$option_L" != "" ]; then
       # This will trim ($option_L + 1) folders off the beginning of the fs, e.g.
       # "tank/foo/bar/zroot/tmp/yum" becomes (with option_L = 3) "tmp/yum"
       inc_option_L=$(expr $option_L + 1)
       n=1
-      final_opt_src_fs=$opt_src_fs
       while [ ${n} -le ${inc_option_L} ]; do
-        final_opt_src_fs=$(echo "$final_opt_src_fs" | sed -e 's%^[^/]*%%'\
-| sed -e 's%^/%%' )
+        opt_src_fs_modif=$(echo "$opt_src_fs_modif" | sed -e 's%^[^/]*%%' | sed -e 's%^/%%' )
 	n=$((n+1))
       done
     fi
-    #rs_dest="/$destination/$opt_src_fs$opt_src_tail"
-    rs_dest="/$destination/$final_opt_src_fs"
+    #rs_dest="/$destination/$opt_src_fs_modif$opt_src_tail"
+    rs_dest="/$destination/$opt_src_fs_modif"
 
     # if $destination is "zroot/foo/bar", this regex gets "zroot"
     dest_root=$(echo "$destination" | sed -e 's%/.*$%%')

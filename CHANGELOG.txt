@@ -13,6 +13,10 @@ CHANGELOG
 	   -Added a "p" switch to persist in face of rsync errors.
 	   -Added an "E" to enable passing of excludes to rsync (useful
 	     for avoiding transfer of zpool.cache)
+	   -Added an "i" option to enable inclusion of filesystem mountpoints
+	     on the destination, as they needed to be excluded by default.
+	     If they aren't excluded then --del will wipe anything there,
+	     e.g. contents from a filesystem from another pool.
 20110407 ver 0.9.7
            -Removed the extra backup related content from the man page
              as more suitable for external documentation. KISS.
