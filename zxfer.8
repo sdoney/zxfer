@@ -904,7 +904,9 @@ detail, check out the
 wiki.
 .Pp
 .Nm
-.Cm -SPkld -R /bin,/boot,/compat,/etc,/lib,/libexec,/rescue,/root,/sbin,/tmp,/usr,/var,/vshare -N /.cshrc,/.profile storage/zr_backup
+.Cm -SPkld 
+.Cm -R /bin,/boot,/compat,/etc,/lib,/libexec,/rescue,/root,/sbin,/tmp,/usr,/var,/vshare 
+.Cm -N /.cshrc,/.profile storage/zr_backup
 .Pp
 The resulting filesystem structure will look something like:
 .Pa storage/zr_backup/zroot
@@ -929,8 +931,10 @@ wiki. Here is the command for the
 part of the procedure (note you will need to add any directories of your creation kept on your zroot e.g. "vshare"):
 .Pp
 .Nm
-.Cm -SpldBv -E /boot/zfs/zpool.cache -u auto-2010-11-14_14.00 
-.Cm -L 2 -N $zrootdir/.cshrc,$zrootdir/.profile 
+.Cm -SpldBv -E /boot/zfs/zpool.cache 
+.Cm -u auto-2010-11-14_14.00 
+.Cm -L 2 
+.Cm -N $zrootdir/.cshrc,$zrootdir/.profile 
 .Cm -R $zrootdir/bin,$zrootdir/boot,$zrootdir/compat,$zrootdir/etc,$zrootdir/lib,$zrootdir/libexec,$zrootdir/rescue,$zrootdir/root,$zrootdir/sbin,$zrootdir/tmp,$zrootdir/usr,$zrootdir/var,$zrootdir/vshare zroot 
 .Pp
 .Ss Ex10 - Migrate a filesystem
