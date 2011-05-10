@@ -34,7 +34,7 @@
 .\"     zxfer [-h]
 .\"
 .\"           Where destination is a ZFS filesystem e.g.  poolname/fsname
-.Dd May 04, 2011
+.Dd May 10, 2011
 .Dt ZXFER 8
 .Os
 .Sh NAME
@@ -577,12 +577,16 @@ equivalent to
 .It Fl E
 Pass (E)xclude patterns to
 .Xr rsync 1 .
-e.g. If you want to specify "--exclude=/zfs/zpool.cache" when
+e.g. If you want to specify "--exclude=/boot/zfs/zpool.cache" when
 .Xr rsync 1
 is called, then
-use "-E /zfs/zpool.cache". You can specify this option as many times as you
-like, and it will pass each exclude pattern to 
+use "-E /boot/zfs/zpool.cache". You can specify this option as many times as
+you like, and it will pass each exclude pattern to 
 .Xr rsync 1 .
+My understanding of how to get this to work is to specify the exclude as a
+continuation of the filesystem mountpoint on which the file/directory is
+stored. e.g. with "/boot/zfs/zpool.cache"
+it works because the mountpoint of zroot is effectively "/".
 .It Fl f
 Specify a (f)ile that contains a list of options to feed to 
 .Cm rsync .
@@ -634,7 +638,9 @@ will transfer only
 (p)ersist through 
 .Xr rsync 1
 errors. This saves having to feed directories individually to
-.Nm .
+.Nm ,
+if we expect rsync to return an error at some point (e.g. when it tries to
+overwrite itself).
 .It Fl R
 (R)ecursively replicate all directories and files under the specified source(s).
 If specifying 
@@ -886,45 +892,46 @@ and
 Note that this will only work on filesystems that are writable.
 .Pp
 .Ss Ex8 - Backup FreeBSD 8.2 root mirror
-In this case we might want to backup a directory within a pool, using rsync
-to do the heavy lifting, while also making a backup of the properties
-of the filesystems transferred. Note that this was only tested with a
-non-updated world and kernel.
+This will make a recursive snapshot of the root mirror, create similar
+filesystems on the pool
+.Pa storage ,
+transfer the properties over,
+.Xr rsync 1
+across the directories and files needed to restore the system,
+and destroy the snapshots when done. To see how to do this in more
+detail, check out the
+.Nm
+wiki.
 .Pp
 .Nm
-.Cm -SPklv -R /boot/modules,/root,/etc,/var,/usr 
-.Cm -N /boot/loader.conf back/zr_backup
+.Cm -SPkld -R /bin,/boot,/compat,/etc,/lib,/libexec,/rescue,/root,/sbin,/tmp,/usr,/var,/vshare -N /.cshrc,/.profile storage/zr_backup
 .Pp
 The resulting filesystem structure will look something like:
-.Pa back/zr_backup/zroot
-.Pa back/zr_backup/zroot/usr  
-.Pa back/zr_backup/zroot/var
+.Pa storage/zr_backup/zroot
+.Pa storage/zr_backup/zroot/usr  
+.Pa storage/zr_backup/zroot/var
 etc. 
 .Pp
 .Ss Ex9 - Restore FreeBSD 8.2 root mirror
 To restore the config files backed up in Ex8, we would do so using the
 following command after installing the system, 
 installing 
-.Xr rsync 1 ,
+.Nm 
 and booting up in the system.
 This uses the snapshot auto-2010-11-14_14.00. Note that
 for this to work properly
 .Pa /var/empty
-must be set to mutable. 
-.Pp
-.Cm chflags noschg /var/empty
-.Pp
-Execute the 
-.Nm .
+must be set to mutable. Also, the flag "schg" must be turned off to transfer
+properly. For the full sequence of commands, see the
+.Nm
+wiki. Here is the command for the
+.Nm
+part of the procedure (note you will need to add any directories of your creation kept on your zroot e.g. "vshare"):
 .Pp
 .Nm
-.Cm -Slv -L 2 -R -u auto-2010-11-14_14.00
-.Cm /back/zr_backup/zroot/usr,/back/zr_backup/zroot/boot/modules,/back/zr_backup/zroot/root,/back/zr_backup/zroot/etc,/back/zr_backup/zroot/var
-.Cm -N /back/zr_backup/zroot/boot/loader.conf zroot
-.Pp
-Reverse the mutability.
-.Pp
-.Cm chflags schg /var/empty
+.Cm -SpldBv -E /boot/zfs/zpool.cache -u auto-2010-11-14_14.00 
+.Cm -L 2 -N $zrootdir/.cshrc,$zrootdir/.profile 
+.Cm -R $zrootdir/bin,$zrootdir/boot,$zrootdir/compat,$zrootdir/etc,$zrootdir/lib,$zrootdir/libexec,$zrootdir/rescue,$zrootdir/root,$zrootdir/sbin,$zrootdir/tmp,$zrootdir/usr,$zrootdir/var,$zrootdir/vshare zroot 
 .Pp
 .Ss Ex10 - Migrate a filesystem
 We might want to migrate a filesystem (including properties).

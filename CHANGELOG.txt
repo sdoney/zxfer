@@ -1,6 +1,6 @@
 CHANGELOG
 =========
-20110504 ver 0.9.8
+20110510 ver 0.9.8
            -Added -c option to default rsync options list. Note that this
 	     much increases reliability of backups, at the expense of speed.
 	   -Removed --del option when transferring single files with -N.
@@ -10,11 +10,13 @@ CHANGELOG
 	     any deletions would occur. If grandfathers are being deleted,
 	     chances are something is wrong, so better to fail before doing
 	     damage.
-	   -Added a "p" switch to persist in face of rsync errors.
+	   -Added a "p" switch to persist in face of rsync errors. Needed
+	     for a full system restore.
 	   -Added an "E" to enable passing of excludes to rsync (useful
 	     for avoiding transfer of zpool.cache)
 	   -Added an "i" option to enable inclusion of filesystem mountpoints
-	     on the destination, as they needed to be excluded by default.
+	     on the destination in -S mode, as they needed to be excluded
+	     by default.
 	     If they aren't excluded then --del will wipe anything there,
 	     e.g. contents from a filesystem from another pool.
 20110407 ver 0.9.7

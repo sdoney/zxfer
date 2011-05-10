@@ -254,7 +254,7 @@ usage:
            [-m [c FMRI|pattern[ FMRI|pattern]...]]] [-O user@host]
            [-T user@host] [-o option1=value1,option2=value2...] [-g days]
            destination
-     zxfer {-S} [-dlpPnv] [-k | -e] [-b | -B] [-f /path/to/rsfile]
+     zxfer {-S} [-dilpPnv] [-k | -e] [-b | -B] [-f /path/to/rsfile]
            {-R /path/to/src1,path/to/src2... | -N /path/to/src1,path/to/src2...}
            [-o option1=value1,option2=value2...] [-E pattern] [-L value]
            [-u snapshot] destination
@@ -790,10 +790,6 @@ grep -v "^$opt_src_fs_modif$")
   # destination, as they will have their own rsync transfer or be
   # left for an independent restore procedure.
   if [ $option_i -eq 0 ]; then
-#    dest_exclude_dir_list=$(echo "$rzfs_list_Ho_mountpoint" | \
-#grep ^$opt_src_fs_mountpoint | grep -v "^$opt_src_fs_mountpoint$")
-#    dest_exclude_dir_list=$(echo "$dest_exclude_dir_list" | \
-#sed -e "s%^$opt_src_fs_mountpoint%%g")
     dest_exclude_dir_list=$(echo "$rzfs_list_Ho_mountpoint" | grep ^$rs_dest\
  | grep -v "^$rs_dest$")
       dest_exclude_dir_list=$(echo "$dest_exclude_dir_list" | \
