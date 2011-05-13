@@ -1,5 +1,10 @@
 CHANGELOG
 =========
+20110513 ver 0.9.9
+           -Fixed a small but showstopping bug in Solaris that wasn't showing
+	     up in FreeBSD. Thanks predrag....@googlemail.com. Because this
+	     is the only fix and is not affecting FreeBSD, I may not update
+	     the port until the next version.
 20110510 ver 0.9.8
            -Added -c option to default rsync options list. Note that this
 	     much increases reliability of backups, at the expense of speed.

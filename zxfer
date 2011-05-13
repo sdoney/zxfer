@@ -92,7 +92,7 @@
 #           Where destination is a ZFS filesystem e.g.  poolname/fsname
 
 # zxfer version
-zxfer_version="0.9.8"
+zxfer_version="0.9.9"
 
 # Default values
 option_b=0
@@ -937,7 +937,7 @@ sed -e "s%^$opt_src_fs_mountpoint%%g")
         full_rs_options="$full_rs_options --del"
       fi
     else
-        # is a file
+      :  # is a file; note that ":" is a dummy command.
     fi
 
     if [ "$option_E" != "" ]; then    # add user-specified exclude patterns.
